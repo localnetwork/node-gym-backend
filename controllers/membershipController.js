@@ -27,9 +27,10 @@ const addMembershipDuration = (req, res) => {
       title: "Title is required.",
     });
   }
-  if (!months_total) {
+
+  if (months_total.length < 0) {
     errors.push({
-      months_total: "Months Total is required.",
+      months_total: "Total Months is required.",
     });
   }
 

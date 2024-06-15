@@ -5,12 +5,15 @@ const {
   login,
   profile,
 } = require("../controllers/userController.js");
-const { verifyToken } = require("../middleware/authMiddleware.js");
+const {
+  verifyToken,
+  isAdminEmployee,
+} = require("../middleware/authMiddleware.js");
 
 // const { protect } = require("../middleware/authMiddleware");
 
 router.post("/login", login);
-router.post("/register", register);
+router.post("/register", verifyToken, register);
 router.get("/profile", verifyToken, profile);
 
 module.exports = router;

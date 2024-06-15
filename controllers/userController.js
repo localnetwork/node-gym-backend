@@ -84,6 +84,7 @@ login = async (req, res) => {
           name: user.name,
           avatar: user.avatar,
           avatarColor: user.avatar_color,
+          role: user.role,
         },
       });
     }
@@ -159,7 +160,7 @@ const register = async (req, res) => {
     connection.query(ifExistQuery, [email], (error, results) => {
       if (error) {
         errors.push({
-          server: "Password is required.",
+          server: "Server Error.",
         });
       } else {
         if (results.length > 0) {
@@ -193,6 +194,8 @@ const register = async (req, res) => {
         }
       }
     });
+
+    console.log("errors", errors);
 
     if (errors.length > 0) {
       return res.status(422).json({
@@ -247,17 +250,16 @@ const profile = async (req, res) => {
         });
       }
       const user = results[0];
+      const data = {
+        user_id: user.user_id,
+        email: user.email,
+        name: user.name,
+        avatar: user.avatar,
+        avatarColor: user.avatar_color,
+        role: user.role,
+      };
       res.status(200).json({
-        status_code: 200,
-        message: "User profile fetched successfully.",
-        data: {
-          user_id: user.user_id,
-          email: user.email,
-          name: user.name,
-          avatar: user.avatar,
-          avatarColor: user.avatar_color,
-          role: user.role,
-        },
+        data,
       });
     });
   });

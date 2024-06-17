@@ -3,79 +3,70 @@ const bcrypt = require("bcrypt");
 const connection = require("../config/db");
 const saltRounds = 10;
 
-login = async (req, res) => {
+const login = async (req, res) => {
   const { email, password } = req.body;
-  const errors = [];
-  if (!email) {
-    errors.push({
-      email: "Email is required.",
-    });
-  }
 
-  if (!password) {
-    errors.push({
-      password: "Password is required.",
-    });
-  }
+  try {
+    // Input validation
+    const errors = [];
+    if (!email) {
+      errors.push({ email: "Email is required." });
+    }
+    if (!password) {
+      errors.push({ password: "Password is required." });
+    }
+    if (errors.length > 0) {
+      return res.status(422).json({
+        status_code: 422,
+        message: "Please check errors in the fields.",
+        errors: errors,
+      });
+    }
 
-  if (errors.length > 0) {
-    return res.status(422).json({
-      status_code: 422,
-      message: "Please check errors in the fields.",
-      errors: errors,
-    });
-  }
-
-  connection.query(
-    "SELECT * FROM users WHERE email = ?",
-    [email],
-    async (error, results) => {
+    // Check if user exists
+    const query = "SELECT * FROM users WHERE email = ?";
+    connection.query(query, [email], async (error, results) => {
       if (error) {
-        errors.push({
-          server: "Server Error.",
-        });
+        console.error("Database error:", error);
         return res.status(500).json({
           status_code: 500,
           message: "Server Error.",
-          errors: errors,
+          errors: [{ server: "Server Error." }],
         });
       }
 
       if (results.length === 0) {
-        errors.push({
-          email: "These credentials do not match our records.",
-          password: "These credentials do not match our records.",
+        return res.status(401).json({
+          status_code: 401,
+          message: "These credentials do not match our records.",
+          errors: [{ email: "These credentials do not match our records.", password: "These credentials do not match our records." }],
         });
       }
 
       const user = results[0];
 
+      // Compare passwords
       const passwordMatch = await bcrypt.compare(password, user.password);
-
       if (!passwordMatch) {
-        errors.push({
-          email: "These credentials do not match our records.",
-          password: "These credentials do not match our records.",
+        return res.status(401).json({
+          status_code: 401,
+          message: "These credentials do not match our records.",
+          errors: [{ email: "These credentials do not match our records.", password: "These credentials do not match our records." }],
         });
       }
 
-      if (errors.length > 0) {
-        return res.status(422).json({
-          status_code: 422,
-          message: "Please check errors in the fields.",
-          errors: errors,
-        });
-      }
-
+      // Generate JWT token
       const token = jwt.sign(
         {
           userId: user.user_id,
           email: user.email,
-          name: user.name,
-          // exp: Math.floor(Date.now() / 1000) + expiresIn, // disable expiration
+          name: user.name, 
         },
-        process.env.NODE_JWT_SECRET
+        process.env.NODE_JWT_SECRET,
+        // { expiresIn: '1h' } // Example: token expires in 1 hour
       );
+
+      // Return successful login response
       res.json({
         token,
         user: {
@@ -87,9 +78,17 @@ login = async (req, res) => {
           role: user.role,
         },
       });
-    }
-  );
-};
+    });
+
+  } catch (error) {
+    console.error("Login error:", error);
+    return res.status(500).json({
+      status_code: 500,
+      message: "Server Error.",
+      errors: [{ server: "Server Error." }],
+    });
+  }
+}; 
 
 const register = async (req, res) => {
   const { email, password, name, avatar, color } = req.body;
@@ -192,18 +191,18 @@ const register = async (req, res) => {
             }
           );
         }
+
+        if (errors.length > 0) {
+          return res.status(422).json({
+            status_code: 422,
+            message: "Please check errors in the fields.",
+            errors: errors,
+          });
+        } 
       }
     });
 
-    console.log("errors", errors);
-
-    if (errors.length > 0) {
-      return res.status(422).json({
-        status_code: 422,
-        message: "Please check errors in the fields.",
-        errors: errors,
-      });
-    }
+    
   } catch (error) {
     errors.push({
       server: "Server Error",
@@ -264,9 +263,25 @@ const profile = async (req, res) => {
     });
   });
 };
+getUsers = async (req, res) => {
+  const query = "SELECT user_id, name, email, avatar, avatar_color, role FROM users";
+  connection.query(query, (error, results) => {
+    if (error) {
+      return res.status(500).json({
+        status_code: 500,
+        message: "Server Error.",
+        error: error.message  // Include the specific error message for debugging
+      });
+    }
+    res.status(200).json({
+      data: results,
+    }); 
+  });
+} 
 
 module.exports = {
   login,
   register,
   profile,
-};
+  getUsers, 
+}; 

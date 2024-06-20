@@ -409,7 +409,7 @@ const deleteUser = async(req, res) => {
         return res.status(500).json({
           status_code: 500,
           message: "Error deleting user.",
-          error: "Server Error.",
+          error: "Server Error.", 
         });
       }
 

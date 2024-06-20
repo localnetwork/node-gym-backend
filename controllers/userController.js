@@ -3,6 +3,8 @@ const bcrypt = require("bcrypt");
 const connection = require("../config/db");
 const saltRounds = 10;
 
+const entity = require("../lib/entity");
+
 const login = async (req, res) => {
   const { email, password } = req.body;
 
@@ -59,8 +61,9 @@ const login = async (req, res) => {
       const token = jwt.sign(
         {
           userId: user.user_id,
-          email: user.email,
+          email: user.email, 
           name: user.name, 
+          role: user.role
         },
         process.env.NODE_JWT_SECRET,
         // { expiresIn: '1h' } // Example: token expires in 1 hour
@@ -91,17 +94,34 @@ const login = async (req, res) => {
 }; 
 
 const register = async (req, res) => {
-  const { email, password, name, avatar, color } = req.body;
+  const { email, password, confirm_password, name, avatar, color, role } = req.body;
   const errors = [];
+  const token = req.headers["authorization"].split(" ")[1];
+
+  let currentUser; 
+  const getCurrentUser = entity.getCurrentUser(token); 
+
+  try {
+    currentUser = await entity.findUserById(getCurrentUser?.userId);
+  }catch(error) {
+    return res.status(500).json({
+      status_code: 500,
+      message: "Server Error.",
+      error: error.message  // Include the specific error message for debugging
+    });
+  }
+ 
+
   const data = {
-    name,
+    name,  
     email,
     avatar,
-    color,
-  };
+    color, 
+    role
+  }; 
 
   // Check if avatar is provided
-  if (!avatar) {
+  if (!avatar) { 
     errors.push({
       avatar: "Avatar is required.",
     });
@@ -121,6 +141,12 @@ const register = async (req, res) => {
     });
   }
 
+  if(!role) {
+    errors.push({
+      role: "Role is required."
+    }) 
+  }
+
   // Check if email is provided and valid
   if (!email) {
     errors.push({
@@ -134,12 +160,46 @@ const register = async (req, res) => {
       });
     }
   }
+ 
+  
+  if (currentUser?.role === 1 && role === 1) {
+    errors.push({
+      role: "You don't have enough permission to create this type of account.",
+    }); 
+  }     
+  
+  if (currentUser?.role === 2 && role !== 3) {
+    errors.push({
+      role: "You don't have enough permission to create this type of account.",
+    }); 
+  } 
+   
+  if(password !== confirm_password) {
+    errors.push({
+      password: "Password and Confirm Password do not match.",
+    }); 
+    errors.push({
+      confirm_password: "Password and Confirm Password do not match.",
+    }); 
+  } 
 
   // Check if password is provided
   if (!password) {
     errors.push({
       password: "Password is required.",
     });
+  }
+
+  if(!confirm_password) {
+    errors.push({
+      confirm_password: "Confirm Password is required.",
+    });
+  }  
+
+  if(!role) {
+    errors.push({
+      role: "Role is required.",
+    }); 
   }
 
   if (errors.length > 0) {
@@ -228,7 +288,7 @@ const profile = async (req, res) => {
   const bearerToken = token.split(" ")[1];
 
   jwt.verify(bearerToken, process.env.NODE_JWT_SECRET, (err, decoded) => {
-    if (err) {
+    if (err) { 
       return res.status(401).json({
         status_code: 401,
         message: "Invalid token.",
@@ -279,9 +339,251 @@ getUsers = async (req, res) => {
   });
 } 
 
+  
+const deleteUser = (req, res) => {
+  const token = req.headers["authorization"];
+
+  if (!token) {
+    return res.status(422).json({
+      status_code: 422, 
+      error: "Token not provided.",
+    }); 
+  } 
+
+  const bearerToken = token.split(" ")[1]; 
+
+  jwt.verify(bearerToken, process.env.NODE_JWT_SECRET, (err, decoded) => {
+    if (err) {
+      return res.status(401).json({
+        status_code: 401,
+        message: "Invalid token.",
+        error: "Invalid token",
+      });
+    }
+
+    req.user = decoded;
+
+    // Check if the user is trying to delete their own account 
+    if (req.user.user_id === req.params.user_id) {
+      return res.status(422).json({
+        status_code: 422,
+        message: "You cannot delete your own account.",
+        error: "Forbidden",
+      });  
+    } 
+
+    const query = "SELECT * FROM users WHERE user_id = ?";
+
+    connection.query(query, [req.params.userId], (error, results) => {
+      if (error) {
+        return res.status(500).json({
+          status_code: 500,
+          message: "Server Error.",
+          error: "Server Error.",
+        });
+      }
+
+      if (results.length === 0) {
+        return res.status(404).json({
+          status_code: 404,
+          message: "User not found.",
+          error: "User not found",
+        });
+      }
+
+      const deleteQuery = "DELETE FROM users WHERE user_id = ?";
+      connection.query(deleteQuery, [req.params.userId], (deleteError, deleteResults) => {
+        if (deleteError) {
+          return res.status(500).json({
+            status_code: 500,
+            message: "Error deleting user.",
+            error: "Server Error.",
+          });
+        }
+
+        res.status(200).json({
+          status_code: 200,
+          message: "User deleted successfully.",
+        });
+      });
+    });
+  });
+} 
+
+const getUser = (req, res) => {  
+  const query = "SELECT user_id, name, email, avatar, avatar_color, role FROM users WHERE user_id = ?";
+  connection.query(query, [req.params.id], (error, results) => {
+    if (error) {
+      return res.status(500).json({
+        status_code: 500,
+        message: "Server Error.",
+        error: error.message  // Include the specific error message for debugging
+      });
+    }
+    if (results.length === 0) {
+      return res.status(404).json({
+        status_code: 404,
+        message: "User not found.",
+        error: "User not found",
+      });
+    }
+    res.status(200).json(results[0]);  
+  });
+
+}
+
+const updateUserById = async(req, res) => {
+  const { id } = req.params; 
+  const token = req.headers["authorization"];
+  const bearerToken = token.split(" ")[1];
+
+  let user;   
+  let currentUser; 
+  const getCurrentUser = entity.getCurrentUser(bearerToken);
+
+  try {
+    user = await entity.findUserById(id);
+    currentUser = await entity.findUserById(getCurrentUser?.userId);
+  }catch(error) {
+    return res.status(500).json({
+      status_code: 500,
+      message: "Server Error.",
+      error: error.message  // Include the specific error message for debugging
+    });
+  }
+
+  const { email, name, avatar, color, role } = req.body;
+  const errors = [];
+  const query = "SELECT * FROM users WHERE user_id = ?";
+  
+  // Current user validation
+  if(user.role === 1 && user.role !== role) {
+    errors.push({
+      role: "You are not allowed to changed the role of admin user.",
+    });    
+  }
+ 
+  if(currentUser.role !== 3 && user.role === 2 && user.role !== role) {
+    errors.push({
+      role: "You don't have enough permission to change employee role.",
+    });
+  }
+
+  if(currentUser.role !== 1 && user.role === 1) { 
+    errors.push({
+      name: "You are not allowed to update this account."
+    })  
+    errors.push({
+      email: "You are not allowed to update this account."
+    }) 
+    errors.push({
+      role: "You are not allowed to update this account."
+    }) 
+  }
+
+  if(currentUser.role == 2 && user.role == 2 && role != 3) {
+    errors.push({
+      role: "You can only assign member role.", 
+    });
+  }   
+  // End of current user validation 
+
+  const data = {
+    email,
+    name,
+    avatar,
+    color,
+    role,
+  } 
+
+  if (!email) {
+    errors.push({
+      email: "Email is required.",
+    });
+  }
+
+  if (!name) {
+    errors.push({
+      name: "Name is required.",
+    });
+  }
+
+  if (!avatar) {
+    errors.push({
+      avatar: "Avatar is required.",
+    });
+  }
+
+  if (!color) {
+    errors.push({
+      avatar_color: "Avatar Color is required.",
+    });
+  }
+ 
+  if (!role) {
+    errors.push({
+      role: "Role is required.",
+    });
+  } 
+
+  if(errors.length > 0) {
+    return res.status(422).json({
+      status_code: 422,
+      message: "Please check errors in the fields.",
+      errors: errors,
+    }); 
+  }
+
+  connection.query(query, [id], (error, results) => {
+    if (error) {
+      return res.status(500).json({
+        status_code: 500,
+        message: "Server Error.",
+        error: error.message  // Include the specific error message for debugging
+      });
+    }  
+
+    if (results.length === 0) {
+      return res.status(404).json({
+        status_code: 404, 
+        message: "User not found.",
+        error: "User not found",
+      });
+    }
+
+    if (errors.length > 0) {
+      return res.status(422).json({
+        status_code: 422,
+        message: "Please check errors in the fields.",
+        errors: errors,
+      });
+    }
+
+    const updateQuery = "UPDATE users SET email = ?, name = ?, avatar = ?, avatar_color = ?, role = ? WHERE user_id = ?";
+    connection.query(updateQuery, [email, name, avatar, color, role, id], (updateError, updateResults) => {
+      if (updateError) {
+        return res.status(500).json({
+          status_code: 500,
+          message: "Error updating user.",
+          error: "Server Error.",
+        });
+      }
+
+      return res.status(200).json({
+        status_code: 200,
+        message: "User updated successfully.",
+        data: data,
+      });
+    });
+  });
+} 
+
 module.exports = {
   login,
   register,
   profile,
   getUsers, 
+  getUser,  
+  deleteUser,
+  updateUserById
 }; 

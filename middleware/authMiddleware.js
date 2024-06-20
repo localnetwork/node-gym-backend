@@ -64,14 +64,13 @@ const isAdmin = (req, res, next) => {
         });
       }
       const user = results[0];
-      if (user.role !== 1) {
+      if (user && user?.role !== 1) {
         return res.status(403).json({
           status_code: 403,
           error: "You are not authorized to access this resource.",
         });
       }
-
-      next();
+      next(); 
     });
   });
 };
@@ -169,49 +168,67 @@ const isEmployee = (req, res, next) => {
 };
 
 const isAdminEmployee = (req, res, next) => {
-  const token = req.headers["authorization"];
+  const authorizationHeader = req.headers['authorization'];
+
+  if (!authorizationHeader) {
+    return res.status(422).json({
+      status_code: 422,
+      error: 'Authorization header not provided.',
+    });
+  }
+
+  const token = authorizationHeader.split(' ')[1];
 
   if (!token) {
     return res.status(422).json({
       status_code: 422,
-      error: "Token not provided.",
+      error: 'Token not provided.',
     });
   }
 
-  const bearerToken = token.split(" ")[1];
-
-  jwt.verify(bearerToken, process.env.NODE_JWT_SECRET, (err, decoded) => {
+  jwt.verify(token, process.env.NODE_JWT_SECRET, (err, decoded) => {
     if (err) {
       return res.status(401).json({
         status_code: 401,
-        message: "Invalid token.",
-        error: "Invalid token",
+        message: 'Invalid token.',
+        error: 'Invalid token',
       });
     }
 
     req.user = decoded;
 
-    const query = "SELECT * FROM users WHERE user_id = ?";
+    const query = 'SELECT * FROM users WHERE user_id = ?';
 
     connection.query(query, [req.user.userId], (error, results) => {
       if (error) {
         return res.status(500).json({
           status_code: 500,
-          message: "Server Error.",
-          error: "Server Error.",
+          message: 'Server error.',
+          error: 'Server error.',
         });
       }
+
+      if (results.length === 0) {
+        return res.status(404).json({
+          status_code: 404,
+          message: 'User not found.',
+          error: 'User not found.',
+        });
+      }
+
       const user = results[0];
+
       if (user.role === 3) {
         return res.status(403).json({
           status_code: 403,
-          error: "You are not authorized to access this resource.",
+          error: 'You are not authorized to access this resource.',
         });
       }
+
       next();
     });
   });
-};
+}; 
 
 const isMemberEmployee = (req, res, next) => {
   const token = req.headers["authorization"];
@@ -307,4 +324,5 @@ const membershipSubscriptionValidator = (req, res, next) => {
 module.exports = {
   verifyToken,
   isAdmin,
+  isAdminEmployee, 
 };

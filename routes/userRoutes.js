@@ -5,6 +5,9 @@ const {
   login,
   profile,
   getUsers, 
+  getUser, 
+  deleteUser, 
+  updateUserById,
 } = require("../controllers/userController.js");
 const {
   verifyToken,
@@ -12,11 +15,12 @@ const {
   isAdmin,
 } = require("../middleware/authMiddleware.js");
 
-// const { protect } = require("../middleware/authMiddleware");
-
 router.post("/login", login);
-router.post("/register", verifyToken, register);
-router.get("/profile", verifyToken, profile);
-router.get('/users', verifyToken, isAdmin, getUsers)
-
+router.get("/profile", verifyToken, profile); 
+router.get('/users', verifyToken, isAdminEmployee, getUsers)
+router.post("/users", verifyToken, isAdminEmployee, register); 
+router.delete("/users/:id", verifyToken, isAdminEmployee, deleteUser); 
+router.get("/users/:id", verifyToken, isAdminEmployee, getUser); 
+router.put("/users/:id", verifyToken, isAdminEmployee, updateUserById)
+ 
 module.exports = router;

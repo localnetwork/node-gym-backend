@@ -214,7 +214,7 @@ const register = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, saltRounds);
     const ifExistQuery = "SELECT * FROM users WHERE email = ?";
     const inserUserQuery =
-      "INSERT INTO users (email, name, password, avatar, avatar_color) VALUES (?, ?, ?, ?, ?)";
+      "INSERT INTO users (email, name, password, avatar, avatar_color, role) VALUES (?, ?, ?, ?, ?, ?)";
 
     connection.query(ifExistQuery, [email], (error, results) => {
       if (error) {
@@ -229,7 +229,7 @@ const register = async (req, res) => {
         } else {
           connection.query(
             inserUserQuery,
-            [email, name, hashedPassword, avatar, color],
+            [email, name, hashedPassword, avatar, color, role],
             (error, results) => {
               if (error) {
                 errors.push({
@@ -309,6 +309,13 @@ const profile = async (req, res) => {
         });
       }
       const user = results[0];
+
+      if(!user) { 
+        return res.status(401).json({
+          status_code: 401,
+          message: "Invalid token.", 
+        })
+      }
       const data = {
         user_id: user.user_id,
         email: user.email,
@@ -340,74 +347,78 @@ getUsers = async (req, res) => {
 } 
 
   
-const deleteUser = (req, res) => {
-  const token = req.headers["authorization"];
+const deleteUser = async(req, res) => {
+  const token = req.headers["authorization"].split(" ")[1];
+  const currentUser = entity.getCurrentUser(token);  
 
-  if (!token) {
+  let deleteUser;
+  let getCurrentUser; 
+
+  try {
+    getCurrentUser = await entity.findUserById(currentUser.userId);
+    deleteUser = await entity.findUserById(req.params.id);
+  }catch(error) { 
+    console.error('Error', error)
+  }  
+
+  if (getCurrentUser.user_id === deleteUser.user_id) {
     return res.status(422).json({
-      status_code: 422, 
-      error: "Token not provided.",
-    }); 
+      status_code: 422,
+      message: "You cannot delete your own account.",
+      error: "Forbidden",
+    });  
   } 
 
-  const bearerToken = token.split(" ")[1]; 
+  if(getCurrentUser.role === 1 && deleteUser.role === 1) {
+    return res.status(422).json({
+      status_code: 422,
+      message: "You're not allowed to delete an admin account.",
+      error: "Forbidden",
+    });
+  }  
+  if(getCurrentUser.role != 1 && (deleteUser.role === 1 || deleteUser.role === 2)) {
+    return res.status(422).json({
+      status_code: 422,
+      message: "You don't have enough permission to delete this account.",
+      error: "Forbidden",
+    });   
+  } 
+  const query = "DELETE FROM users WHERE user_id = ?";  
 
-  jwt.verify(bearerToken, process.env.NODE_JWT_SECRET, (err, decoded) => {
-    if (err) {
-      return res.status(401).json({
-        status_code: 401,
-        message: "Invalid token.",
-        error: "Invalid token",
+  connection.query(query, [deleteUser.user_id], (error, results) => {
+    if (error) {
+      console.log('error', error)
+      return res.status(500).json({
+        status_code: 500,
+        message: "Server Error.",
+        error: "Server Error.", 
+      });
+    }    
+
+    if (results.length === 0) {
+      return res.status(404).json({
+        status_code: 404,
+        message: "User not found.",
+        error: "User not found",
       });
     }
 
-    req.user = decoded;
-
-    // Check if the user is trying to delete their own account 
-    if (req.user.user_id === req.params.user_id) {
-      return res.status(422).json({
-        status_code: 422,
-        message: "You cannot delete your own account.",
-        error: "Forbidden",
-      });  
-    } 
-
-    const query = "SELECT * FROM users WHERE user_id = ?";
-
-    connection.query(query, [req.params.userId], (error, results) => {
-      if (error) {
+    const deleteQuery = "DELETE FROM users WHERE user_id = ?";
+    connection.query(deleteQuery, [req.params.userId], (deleteError, deleteResults) => {
+      if (deleteError) {
         return res.status(500).json({
           status_code: 500,
-          message: "Server Error.",
+          message: "Error deleting user.",
           error: "Server Error.",
         });
       }
 
-      if (results.length === 0) {
-        return res.status(404).json({
-          status_code: 404,
-          message: "User not found.",
-          error: "User not found",
-        });
-      }
-
-      const deleteQuery = "DELETE FROM users WHERE user_id = ?";
-      connection.query(deleteQuery, [req.params.userId], (deleteError, deleteResults) => {
-        if (deleteError) {
-          return res.status(500).json({
-            status_code: 500,
-            message: "Error deleting user.",
-            error: "Server Error.",
-          });
-        }
-
-        res.status(200).json({
-          status_code: 200,
-          message: "User deleted successfully.",
-        });
+      res.status(200).json({
+        status_code: 200,
+        message: "User deleted successfully.",
       });
     });
-  });
+  }); 
 } 
 
 const getUser = (req, res) => {  

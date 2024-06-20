@@ -18,9 +18,9 @@ const {
 router.post("/login", login);
 router.get("/profile", verifyToken, profile); 
 router.get('/users', verifyToken, isAdminEmployee, getUsers)
-router.post("/users", verifyToken, isAdminEmployee, register); 
+router.post("/users", register); 
 router.delete("/users/:id", verifyToken, isAdminEmployee, deleteUser); 
 router.get("/users/:id", verifyToken, isAdminEmployee, getUser); 
 router.put("/users/:id", verifyToken, isAdminEmployee, updateUserById)
  
-module.exports = router;
+module.exports = router; 

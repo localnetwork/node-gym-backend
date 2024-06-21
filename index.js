@@ -6,6 +6,9 @@ const express = require("express");
 const userRoutes = require("./routes/userRoutes");
 const promosRoutes = require("./routes/promosRoutes");
 const membershipDurationsRoutes = require("./routes/membershipRoutes");
+const subscriptionRoutes = require("./routes/subscriptionRoutes");
+const paymentMethodRoutes = require("./routes/paymentMethodsRoutes");
+
 
 const app = express();
 
@@ -21,7 +24,9 @@ app.use(express.json());
 
 app.use(userRoutes);
 app.use(promosRoutes);
-
+app.use(subscriptionRoutes)
+app.use(paymentMethodRoutes);
+ 
 app.use(membershipDurationsRoutes);
 app.listen(process.env.NODE_PORT || 3000, () => {
   console.log(

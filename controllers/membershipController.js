@@ -84,7 +84,7 @@ const addMembershipDuration = (req, res) => {
   });
 };
 
-module.exports = {
+module.exports = { 
   getMembershipDurations,
   addMembershipDuration,
 };

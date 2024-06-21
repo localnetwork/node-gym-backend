@@ -473,18 +473,34 @@ const updateUserById = async(req, res) => {
       role: "You are not allowed to changed the role of admin user.",
     });    
   }
+
  
   if(currentUser.role !== 3 && user.role === 2 && user.role !== role) {
     errors.push({
       role: "You don't have enough permission to change employee role.",
     });
-  }
+  } 
 
+
+  if(currentUser.role === 1 && currentUser.user_id !== user.user_id && user.role === 1) {
+    
+    errors.push({
+      name: "You are not allowed to update other admin accounts."
+    })  
+    errors.push({ 
+      email: "You are not allowed to update other admin accounts."
+    }) 
+    errors.push({
+      role: "You are not allowed to update other admin accounts."
+    })
+  }     
+ 
+ 
   if(currentUser.role !== 1 && user.role === 1) { 
     errors.push({
       name: "You are not allowed to update this account."
     })  
-    errors.push({
+    errors.push({ 
       email: "You are not allowed to update this account."
     }) 
     errors.push({
@@ -589,6 +605,22 @@ const updateUserById = async(req, res) => {
   });
 } 
 
+const getMembers = () => {
+  const query = "SELECT user_id, name, email, avatar, avatar_color, role FROM users WHERE role = 3";
+  connection.query(query, (error, results) => {
+    if (error) {
+      return res.status(500).json({
+        status_code: 500,
+        message: "Server Error.",
+        error: error.message  // Include the specific error message for debugging
+      });
+    }
+    res.status(200).json({
+      data: results,
+    }); 
+  });
+}
+
 module.exports = {
   login,
   register,
@@ -596,5 +628,6 @@ module.exports = {
   getUsers, 
   getUser,  
   deleteUser,
-  updateUserById
+  updateUserById,
+  getMembers
 }; 

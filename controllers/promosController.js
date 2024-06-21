@@ -269,6 +269,7 @@ const getPromo = (req, res) => {
   });
 };
 
+
 module.exports = {
   getPromos,
   addPromo,

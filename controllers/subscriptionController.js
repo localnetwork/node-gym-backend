@@ -37,7 +37,7 @@ const addSubscription = async(req, res) => {
         errors.push({ availed_by: "Only members can avail subscription." });
     } 
 
-    if(!availedBy && availed_by) {
+    if(!availedBy && availed_by) { 
         errors.push({ availed_by: "Member could not be found." });
     } 
 

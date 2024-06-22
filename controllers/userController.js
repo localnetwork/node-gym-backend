@@ -2,14 +2,17 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const connection = require("../config/db");
 const saltRounds = 10;
+const { v4: uuidv4 } = require('uuid');
 
 const entity = require("../lib/entity");
+const qrCode = require("../lib/qr");
+
+const uuid = uuidv4(); 
 
 const login = async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    // Input validation
     const errors = [];
     if (!email) {
       errors.push({ email: "Email is required." });
@@ -17,6 +20,7 @@ const login = async (req, res) => {
     if (!password) {
       errors.push({ password: "Password is required." });
     }
+
     if (errors.length > 0) {
       return res.status(422).json({
         status_code: 422,
@@ -47,7 +51,6 @@ const login = async (req, res) => {
 
       const user = results[0];
 
-      // Compare passwords
       const passwordMatch = await bcrypt.compare(password, user.password);
       if (!passwordMatch) {
         return res.status(401).json({
@@ -94,7 +97,7 @@ const login = async (req, res) => {
 }; 
 
 const register = async (req, res) => {
-  const { email, password, confirm_password, name, avatar, color, role } = req.body;
+  const { email, password, confirm_password, name, avatar, color, role, status } = req.body;
   const errors = [];
   const token = req.headers["authorization"].split(" ")[1];
 
@@ -117,7 +120,8 @@ const register = async (req, res) => {
     email,
     avatar,
     color, 
-    role
+    role,
+    status
   }; 
 
   // Check if avatar is provided
@@ -145,6 +149,12 @@ const register = async (req, res) => {
     errors.push({
       role: "Role is required."
     }) 
+  }
+
+  if(!role === 1) {
+    errors.push({
+      role: "You can't have an inactive admin account."
+    })
   }
 
   // Check if email is provided and valid
@@ -213,10 +223,12 @@ const register = async (req, res) => {
   try {
     const hashedPassword = await bcrypt.hash(password, saltRounds);
     const ifExistQuery = "SELECT * FROM users WHERE email = ?";
-    const inserUserQuery =
-      "INSERT INTO users (email, name, password, avatar, avatar_color, role) VALUES (?, ?, ?, ?, ?, ?)";
+  
 
-    connection.query(ifExistQuery, [email], (error, results) => {
+    const inserUserQuery =
+      "INSERT INTO users (email, name, password, avatar, avatar_color, role, qr_code, status, uuid) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+
+      connection.query(ifExistQuery, [email], async(error, results) => {
       if (error) {
         errors.push({
           server: "Server Error.",
@@ -225,23 +237,25 @@ const register = async (req, res) => {
         if (results.length > 0) {
           errors.push({
             email: "Email already exists.",
-          });
-        } else {
+          }); 
+        } else { 
+          
+          const qrPath = await qrCode.generate(uuid); 
           connection.query(
             inserUserQuery,
-            [email, name, hashedPassword, avatar, color, role],
+            [email, name, hashedPassword, avatar, color, role, qrPath, 1, uuid],
             (error, results) => {
               if (error) {
                 errors.push({
-                  server: "Server Error",
+                  server: "Server Error", 
                 });
               } else {
                 if (results.affectedRows > 0) {
                   return res.status(200).json({
                     status_code: 200,
-                    message: "User registered successfully",
+                    message: `User ${data.name} added successfully`,
                     data: data,
-                  });
+                  });  
                 } else {
                   errors.push({
                     email: "User registration failed.",
@@ -324,6 +338,8 @@ const profile = async (req, res) => {
         avatarColor: user.avatar_color,
         role: user.role,
       };
+
+
       res.status(200).json({
         data,
       });
@@ -331,7 +347,7 @@ const profile = async (req, res) => {
   });
 };
 getUsers = async (req, res) => {
-  const query = "SELECT user_id, name, email, avatar, avatar_color, role FROM users";
+  const query = "SELECT user_id, name, email, avatar, avatar_color, role, qr_code, status FROM users";
   connection.query(query, (error, results) => {
     if (error) {
       return res.status(500).json({
@@ -376,16 +392,21 @@ const deleteUser = async(req, res) => {
       error: "Forbidden",
     });
   }  
-  if(getCurrentUser.role != 1 && (deleteUser.role === 1 || deleteUser.role === 2)) {
+
+
+  if(getCurrentUser.role !== 1) {
     return res.status(422).json({
       status_code: 422,
       message: "You don't have enough permission to delete this account.",
-      error: "Forbidden",
+      error: "Forbidden", 
     });   
-  } 
-  const query = "DELETE FROM users WHERE user_id = ?";  
+  }  
+ 
+  qrCode.delete(deleteUser.uuid); 
 
-  connection.query(query, [deleteUser.user_id], (error, results) => {
+  const query = "DELETE FROM users WHERE user_id = ?";  
+ 
+  connection.query(query, [deleteUser.user_id], async(error, results) => {
     if (error) {
       console.log('error', error)
       return res.status(500).json({
@@ -403,26 +424,17 @@ const deleteUser = async(req, res) => {
       });
     }
 
-    const deleteQuery = "DELETE FROM users WHERE user_id = ?";
-    connection.query(deleteQuery, [req.params.userId], (deleteError, deleteResults) => {
-      if (deleteError) {
-        return res.status(500).json({
-          status_code: 500,
-          message: "Error deleting user.",
-          error: "Server Error.", 
-        });
-      }
+    
 
-      res.status(200).json({
-        status_code: 200,
-        message: "User deleted successfully.",
-      });
-    });
+    res.status(200).json({
+      status_code: 200,
+      message: "User deleted successfully.",
+    }); 
   }); 
 } 
-
+ 
 const getUser = (req, res) => {  
-  const query = "SELECT user_id, name, email, avatar, avatar_color, role FROM users WHERE user_id = ?";
+  const query = "SELECT user_id, name, email, avatar, avatar_color, role, status, qr_code FROM users WHERE user_id = ?";
   connection.query(query, [req.params.id], (error, results) => {
     if (error) {
       return res.status(500).json({
@@ -463,9 +475,17 @@ const updateUserById = async(req, res) => {
     });
   }
 
-  const { email, name, avatar, color, role } = req.body;
+  const { email, name, avatar, color, role, status } = req.body;
   const errors = [];
   const query = "SELECT * FROM users WHERE user_id = ?";
+
+
+  console.log('getCurrentUser.role', currentUser.role, 'status', status, 'user', user.role)
+  if(currentUser.role === 1 && user.role === 1 && status === false) {
+    errors.push({
+      status: "You can't have an inactive admin account."
+    }); 
+  } 
   
   // Current user validation
   if(user.role === 1 && user.role !== role) {
@@ -473,14 +493,30 @@ const updateUserById = async(req, res) => {
       role: "You are not allowed to changed the role of admin user.",
     });    
   }
-
- 
-  if(currentUser.role !== 3 && user.role === 2 && user.role !== role) {
+  if(currentUser.role !== 1 && user.role === 2 && user.role !== role) {
     errors.push({
       role: "You don't have enough permission to change employee role.",
     });
-  } 
+  }
 
+  if(currentUser?.role === 2 && role === 2 && status === 0) {
+    errors.push({
+      role: "You are not allowed to deactivate employee account.",
+    }); 
+  }
+
+  if(currentUser.user_id !== user.user_id && currentUser.role === 2) {
+    errors.push({
+      name: "You don't have enough permission to update other user's account."
+    })  
+    errors.push({ 
+      email: "You don't have enough permission to update other user's account."
+    }) 
+    errors.push({
+      role: "You don't have enough permission to update other user's account."
+    })
+  }
+ 
 
   if(currentUser.role === 1 && currentUser.user_id !== user.user_id && user.role === 1) {
     
@@ -512,7 +548,7 @@ const updateUserById = async(req, res) => {
     errors.push({
       role: "You can only assign member role.", 
     });
-  }   
+  }    
   // End of current user validation 
 
   const data = {
@@ -585,7 +621,6 @@ const updateUserById = async(req, res) => {
         errors: errors,
       });
     }
-
     const updateQuery = "UPDATE users SET email = ?, name = ?, avatar = ?, avatar_color = ?, role = ? WHERE user_id = ?";
     connection.query(updateQuery, [email, name, avatar, color, role, id], (updateError, updateResults) => {
       if (updateError) {

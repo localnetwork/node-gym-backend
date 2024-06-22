@@ -1,9 +1,5 @@
 const jwt = require("jsonwebtoken");
-const bcrypt = require("bcrypt");
-const saltRounds = 10;
 const connection = require("../config/db");
-
-const expiresIn = 3600;
 
 verifyToken = (req, res, next) => {
   const token = req.headers["authorization"];
@@ -174,7 +170,7 @@ const isAdminEmployee = (req, res, next) => {
     return res.status(422).json({
       status_code: 422,
       error: 'Authorization header not provided.',
-    });
+    }); 
   }
 
   const token = authorizationHeader.split(' ')[1];
@@ -213,7 +209,7 @@ const isAdminEmployee = (req, res, next) => {
           status_code: 404,
           message: 'User not found.',
           error: 'User not found.',
-        });
+        }); 
       }
 
       const user = results[0];

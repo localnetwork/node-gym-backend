@@ -19,18 +19,18 @@ const getMembershipDurations = (req, res) => {
 };
 
 const addMembershipDuration = (req, res) => {
-  const { title, months_total } = req.body;
-  const errors = [];
-
+  const { title, duration } = req.body;
+  const errors = []; 
+ 
   if (!title) {
     errors.push({
       title: "Title is required.",
     });
   }
 
-  if (months_total.length < 0) {
+  if (duration.length < 0) {
     errors.push({
-      months_total: "Total Months is required.",
+      duration: "Total Months is required.",
     });
   }
 
@@ -43,9 +43,9 @@ const addMembershipDuration = (req, res) => {
   }
 
   const findMonthQuery =
-    "SELECT * FROM membership_durations WHERE months_total = ?";
+    "SELECT * FROM membership_durations WHERE duration = ?";
 
-  connection.query(findMonthQuery, [months_total], (error, results) => {
+  connection.query(findMonthQuery, [duration], (error, results) => {
     if (error) {
       return res.status(500).json({
         status_code: 500,
@@ -58,12 +58,12 @@ const addMembershipDuration = (req, res) => {
       return res.status(422).json({
         status_code: 422,
         message: "Already exists.",
-        error: `The membership duration ${months_total} months is already exists.`,
+        error: `The membership duration ${duration} months is already exists.`,
       });
     } else {
       const query =
-        "INSERT INTO membership_durations (title, months_total) VALUES (?, ?)";
-      connection.query(query, [title, months_total], (error, results) => {
+        "INSERT INTO membership_durations (title, duration) VALUES (?, ?)";
+      connection.query(query, [title, duration], (error, results) => {
         if (error) {
           return res.status(500).json({
             status_code: 500,
@@ -76,7 +76,7 @@ const addMembershipDuration = (req, res) => {
           message: "Membership Duration added successfully.",
           data: {
             title: title,
-            months_total: months_total,
+            duration: duration,
           },
         });
       });

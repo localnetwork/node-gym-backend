@@ -1,11 +1,13 @@
 const express = require("express");
 const router = express.Router();
-const { isAdmin } = require("../middleware/authMiddleware");
+const { isAdmin, verifyToken } = require("../middleware/authMiddleware");
 const {
   getMembershipDurations,
   addMembershipDuration,
+  deleteMembershipDuration
 } = require("../controllers/membershipController");
-router.get("/membership-durations", isAdmin, getMembershipDurations);
-router.post("/membership-durations", isAdmin, addMembershipDuration);
+router.get("/membership-durations", verifyToken, isAdmin, getMembershipDurations);
+router.post("/membership-durations", verifyToken, isAdmin, addMembershipDuration);
+router.post("/membership-durations/:id", verifyToken, isAdmin, deleteMembershipDuration);
 
 module.exports = router;

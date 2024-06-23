@@ -84,7 +84,26 @@ const addMembershipDuration = (req, res) => {
   });
 };
 
+const deleteMembershipDuration = (req, res) => {
+  const { id } = req.params;
+  const query = "DELETE FROM membership_durations WHERE id = ?";
+  connection.query(query, [id], (error, results) => {
+    if (error) {
+      return res.status(500).json({
+        status_code: 500,
+        message: "Server Error.",
+        error: "Server Error.",
+      }); 
+    } 
+    res.status(200).json({
+      status_code: 200,
+      message: "Duration deleted successfully.",
+    });
+  });
+}
+
 module.exports = { 
   getMembershipDurations,
   addMembershipDuration,
+  deleteMembershipDuration, 
 };

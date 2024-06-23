@@ -8,6 +8,7 @@ const {
   getUser, 
   deleteUser, 
   updateUserById,
+  getPublicUserInfoByUuid,
 } = require("../controllers/userController.js");
 const {
   verifyToken,
@@ -16,11 +17,12 @@ const {
 } = require("../middleware/authMiddleware.js");
 
 router.post("/login", login);
-router.get("/profile", verifyToken, profile); 
+router.get("/profile", verifyToken, profile);  
 router.get('/users', verifyToken, isAdminEmployee, getUsers)
 router.post("/users", verifyToken, isAdminEmployee, register); 
 router.delete("/users/:id", verifyToken, isAdminEmployee, deleteUser); 
 router.get("/users/:id", verifyToken, isAdminEmployee, getUser); 
 router.put("/users/:id", verifyToken, isAdminEmployee, updateUserById)
+router.get('/users/public/:uuid', getPublicUserInfoByUuid); 
  
 module.exports = router; 

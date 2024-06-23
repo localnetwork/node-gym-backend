@@ -5,9 +5,10 @@ const util = require("../lib/util");
 
 const addSubscription = async(req, res) => {
 
-    const { promo, availed_by, payment_method, status } = req.body; 
+    const { promo, availed_by, payment_method, status } = req.body;
+    const defaultStatus = status || 0;
     let errors = [];
-
+ 
 
     const token = req.headers.authorization.split(" ")[1];
 
@@ -49,8 +50,8 @@ const addSubscription = async(req, res) => {
         errors.push({ payment_method: "Payment method is no longer available. Please select another." });
     }
 
-    if(!promo) {
-        errors.push({ promo: "Promo is required." });
+    if(!promo) { 
+        errors.push({ promo: "Plan is required." });
     }
 
     if(!availedPromo && promo) {
@@ -66,7 +67,7 @@ const addSubscription = async(req, res) => {
     }  
     
     const query = `INSERT INTO subscriptions (created_by, availed_promo, availed_by, mode_payments, created_at, status) VALUES (?, ?, ?, ?, ?, ?)`;
-    connection.query(query, [currentUser.user_id, promo, availed_by, payment_method,  util.getTimestamp(), status], (error, results) => {
+    connection.query(query, [currentUser.user_id, promo, availed_by, payment_method,  util.getTimestamp(), defaultStatus], (error, results) => {
         if (error) { 
             console.log(error, "Error")
             return res.status(500).json({

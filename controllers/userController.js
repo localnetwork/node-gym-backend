@@ -7,7 +7,7 @@ const { v4: uuidv4 } = require('uuid');
 const entity = require("../lib/entity");
 const qrCode = require("../lib/qr");
 
-const uuid = uuidv4(); 
+
 
 const login = async (req, res) => {
   const { email, password } = req.body;
@@ -71,6 +71,16 @@ const login = async (req, res) => {
         process.env.NODE_JWT_SECRET,
         // { expiresIn: '1h' } // Example: token expires in 1 hour
       );
+      if(user.role === 3) {
+        const subscription = await entity.getSubscriptionDaysByUser(user.user_id); 
+        if(subscription?.totalDays < 1) { 
+          return res.status(422).json({
+            status_code: 422,
+            message: "Your subscription has expired.",
+            errors: [{ subscription: "Your subscription has expired." }],
+          }); 
+        }
+      }
 
       // Return successful login response
       res.json({
@@ -239,7 +249,7 @@ const register = async (req, res) => {
             email: "Email already exists.",
           }); 
         } else { 
-          
+          const uuid = uuidv4();  
           const qrPath = await qrCode.generate(uuid); 
           connection.query(
             inserUserQuery,
@@ -347,7 +357,7 @@ const profile = async (req, res) => {
   });
 };
 getUsers = async (req, res) => {
-  const query = "SELECT user_id, name, email, avatar, avatar_color, role, qr_code, status FROM users";
+  const query = "SELECT user_id, name, email, avatar, avatar_color, role, qr_code, uuid, status FROM users";
   connection.query(query, (error, results) => {
     if (error) {
       return res.status(500).json({
@@ -355,7 +365,7 @@ getUsers = async (req, res) => {
         message: "Server Error.",
         error: error.message  // Include the specific error message for debugging
       });
-    }
+    } 
     res.status(200).json({
       data: results,
     }); 
@@ -480,7 +490,6 @@ const updateUserById = async(req, res) => {
   const query = "SELECT * FROM users WHERE user_id = ?";
 
 
-  console.log('getCurrentUser.role', currentUser.role, 'status', status, 'user', user.role)
   if(currentUser.role === 1 && user.role === 1 && status === false) {
     errors.push({
       status: "You can't have an inactive admin account."
@@ -656,6 +665,38 @@ const getMembers = () => {
   });
 }
 
+const getPublicUserInfoByUuid = (req, res) => {
+  const { uuid } = req.params;
+
+  const query = `
+  SELECT name, user_id from users WHERE uuid = ?`;
+
+  connection.query(query, [uuid], async(error, results) => {
+    if (error) {
+      return res.status(500).json({ 
+        status_code: 500, 
+        message: "Server Error.",
+        error: error.message
+      });
+    }
+
+    if (results.length === 0) {
+      return res.status(404).json({
+        status_code: 404,
+        message: "User not found.",
+        error: "User not found",
+      });
+    }
+
+    const subscriptionTotal = await entity.getSubscriptionDaysByUser(results[0].user_id); 
+    res.status(200).json({
+      ...results[0], 
+      subscription: subscriptionTotal
+    });
+  }); 
+   
+}
+
 module.exports = {
   login,
   register,
@@ -664,5 +705,6 @@ module.exports = {
   getUser,  
   deleteUser,
   updateUserById,
-  getMembers
+  getMembers,
+  getPublicUserInfoByUuid
 }; 

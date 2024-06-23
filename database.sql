@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jun 21, 2024 at 09:20 PM
+-- Generation Time: Jun 23, 2024 at 02:00 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -31,17 +31,31 @@ CREATE TABLE `membership_durations` (
   `id` int(11) NOT NULL,
   `title` varchar(255) NOT NULL,
   `created_at` varchar(255) NOT NULL,
-  `months_total` int(11) NOT NULL
+  `duration` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `membership_durations`
 --
 
-INSERT INTO `membership_durations` (`id`, `title`, `created_at`, `months_total`) VALUES
-(1, '3months', '', 3),
-(2, '6months', '', 6),
+INSERT INTO `membership_durations` (`id`, `title`, `created_at`, `duration`) VALUES
+(1, '1 month', '', 30),
+(2, '6months', '', 180),
 (3, 'Lifetime', '', 0);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `non_members`
+--
+
+CREATE TABLE `non_members` (
+  `id` int(11) NOT NULL,
+  `name` varchar(255) NOT NULL,
+  `availed_promo` int(11) NOT NULL,
+  `created_at` varchar(255) NOT NULL,
+  `note` varchar(255) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -74,6 +88,7 @@ CREATE TABLE `promos` (
   `id` int(11) NOT NULL,
   `title` varchar(255) NOT NULL,
   `price` int(11) NOT NULL,
+  `member_type` tinyint(1) NOT NULL,
   `duration` int(11) NOT NULL,
   `created_at` int(11) NOT NULL,
   `status` tinyint(1) NOT NULL
@@ -83,10 +98,11 @@ CREATE TABLE `promos` (
 -- Dumping data for table `promos`
 --
 
-INSERT INTO `promos` (`id`, `title`, `price`, `duration`, `created_at`, `status`) VALUES
-(62, 'sample promo here', 500, 1, 2147483647, 1),
-(65, 'test', 2500, 1, 2147483647, 0),
-(66, 'eee', 800, 1, 2147483647, 1);
+INSERT INTO `promos` (`id`, `title`, `price`, `member_type`, `duration`, `created_at`, `status`) VALUES
+(71, 'Simple Plan', 500, 1, 1, 2147483647, 1),
+(73, 'Plan 2', 200, 1, 1, 2147483647, 1),
+(74, 'Hehehe', 2500, 0, 2, 2147483647, 1),
+(75, 'Lifetime Plan', 2500, 1, 3, 2147483647, 1);
 
 -- --------------------------------------------------------
 
@@ -124,6 +140,13 @@ CREATE TABLE `subscriptions` (
   `status` tinyint(1) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Dumping data for table `subscriptions`
+--
+
+INSERT INTO `subscriptions` (`id`, `created_by`, `availed_promo`, `availed_by`, `created_at`, `mode_payments`, `status`) VALUES
+(33, 11, 75, 45, '1719143918500', 2, 1);
+
 -- --------------------------------------------------------
 
 --
@@ -132,23 +155,27 @@ CREATE TABLE `subscriptions` (
 
 CREATE TABLE `users` (
   `user_id` int(11) NOT NULL,
+  `uuid` varchar(255) NOT NULL,
   `name` varchar(255) NOT NULL,
   `email` varchar(255) NOT NULL,
   `password` varchar(255) NOT NULL,
   `role` int(11) DEFAULT NULL,
   `avatar` varchar(255) NOT NULL,
-  `avatar_color` varchar(255) NOT NULL
+  `avatar_color` varchar(255) NOT NULL,
+  `qr_code` varchar(255) NOT NULL,
+  `status` tinyint(1) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `users`
 --
 
-INSERT INTO `users` (`user_id`, `name`, `email`, `password`, `role`, `avatar`, `avatar_color`) VALUES
-(6, 'John Dee Doo', 'admin@gmail.com', '$2b$10$R56J/o0Im9BvoyLIdh0YdOPbwtO.UWVqJq97ubPp5VdOYlc/rVOzK', 1, 'cow', 'blue'),
-(11, 'John Dee', 'johndee@gmail.com', '$2b$10$lBm8j01sBeFNXdVeoosSkeT.eT4lyEliSekMuThcnET8tt8Xk/BIW', 1, 'cat', 'yellow'),
-(15, 'Peter Co', 'peterco@gmail.com', '$2b$10$Uyjk3zdXKWP4mtAsuhsjTe7rzGTEtyYaPlTX27ATfwpD01Nfhl7Jq', 2, 'bear', 'yellow'),
-(17, 'test', 'e@e.com', '$2b$10$fyR6XXnruZHpx8uSgDPfReGE91ALd3Irb6pd5JAxb9Lq8MgNiAavq', 3, 'bear', 'yellow');
+INSERT INTO `users` (`user_id`, `uuid`, `name`, `email`, `password`, `role`, `avatar`, `avatar_color`, `qr_code`, `status`) VALUES
+(11, '', 'Diome Nike', 'admin@gmail.com', '$2b$10$lBm8j01sBeFNXdVeoosSkeT.eT4lyEliSekMuThcnET8tt8Xk/BIW', 1, 'cow', 'blue', '', 1),
+(15, '', 'Peter Co Lim', 'peterco@gmail.com', '$2b$10$Uyjk3zdXKWP4mtAsuhsjTe7rzGTEtyYaPlTX27ATfwpD01Nfhl7Jq', 1, 'bear', 'yellow', '', 1),
+(45, '073091ba-7d5a-4c0a-9faa-e2b7cb3bbf30', 'member one', 'member@1.com', '$2b$10$8JLUdvgCZVQnxU9N.390Su8CsaQoX6OSmkNlGTkUPSYmBpOWdAVW.', 3, 'bear', 'blue', '/images/qr-codes/073091ba-7d5a-4c0a-9faa-e2b7cb3bbf30.png', 1),
+(46, '6097d35b-458e-4a4c-92a7-bfc002bbba90', 'member 2', 'member@2.com', '$2b$10$I7.BEBukHaSBXPaj3doiHeyUQJqnYes/itdSHgubI7R1nSURaZQ7S', 3, 'pig', 'green', '/images/qr-codes/6097d35b-458e-4a4c-92a7-bfc002bbba90.png', 1),
+(47, '67444d68-71e0-4207-b3f8-34535dd8879b', 'member 3', 'member@3.com', '$2b$10$ipBMT8o3a72PBLx0XfbeGuMSyPDEkXMzeeaakdcm/WNLAqzrcrtIq', 3, 'bear', 'blue', '/images/qr-codes/67444d68-71e0-4207-b3f8-34535dd8879b.png', 1);
 
 --
 -- Indexes for dumped tables
@@ -159,6 +186,13 @@ INSERT INTO `users` (`user_id`, `name`, `email`, `password`, `role`, `avatar`, `
 --
 ALTER TABLE `membership_durations`
   ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `non_members`
+--
+ALTER TABLE `non_members`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `fk_nonMembersPromo` (`availed_promo`);
 
 --
 -- Indexes for table `offline_payment_gateways`
@@ -207,6 +241,12 @@ ALTER TABLE `membership_durations`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
+-- AUTO_INCREMENT for table `non_members`
+--
+ALTER TABLE `non_members`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `offline_payment_gateways`
 --
 ALTER TABLE `offline_payment_gateways`
@@ -216,7 +256,7 @@ ALTER TABLE `offline_payment_gateways`
 -- AUTO_INCREMENT for table `promos`
 --
 ALTER TABLE `promos`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=67;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=76;
 
 --
 -- AUTO_INCREMENT for table `roles`
@@ -228,17 +268,23 @@ ALTER TABLE `roles`
 -- AUTO_INCREMENT for table `subscriptions`
 --
 ALTER TABLE `subscriptions`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=34;
 
 --
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `user_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
+  MODIFY `user_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=48;
 
 --
 -- Constraints for dumped tables
 --
+
+--
+-- Constraints for table `non_members`
+--
+ALTER TABLE `non_members`
+  ADD CONSTRAINT `fk_nonMembersPromo` FOREIGN KEY (`availed_promo`) REFERENCES `promos` (`id`);
 
 --
 -- Constraints for table `promos`

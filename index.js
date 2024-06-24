@@ -82,11 +82,11 @@ if (!fs.existsSync(qrCodeDir)) {
 app.get('/hello', async(req, res) => {
   const test = await entity.getSubscriptionDaysByUser(45);
   return res.json({
-    message: 'Hello World'
+    message: 'Hello World' 
   })
 })
 
-
+ 
 app.listen(process.env.NODE_PORT || 3000, () => {
   console.log(
     `Server is running on port http://localhost:${

@@ -7,10 +7,8 @@ const { v4: uuidv4 } = require('uuid');
 const entity = require("../lib/entity");
 const qrCode = require("../lib/qr");
 
-
-
 const login = async (req, res) => {
-  const { email, password } = req.body;
+  const { email, password } = req.body; 
 
   try {
     const errors = [];
@@ -104,7 +102,7 @@ const login = async (req, res) => {
       errors: [{ server: "Server Error." }],
     });
   }
-}; 
+};
 
 const register = async (req, res) => {
   const { email, password, confirm_password, name, avatar, color, role, status } = req.body;
@@ -233,7 +231,6 @@ const register = async (req, res) => {
   try {
     const hashedPassword = await bcrypt.hash(password, saltRounds);
     const ifExistQuery = "SELECT * FROM users WHERE email = ?";
-  
 
     const inserUserQuery =
       "INSERT INTO users (email, name, password, avatar, avatar_color, role, qr_code, status, uuid) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
@@ -349,7 +346,6 @@ const profile = async (req, res) => {
         role: user.role,
       };
 
-
       res.status(200).json({
         data,
       });
@@ -433,8 +429,6 @@ const deleteUser = async(req, res) => {
         error: "User not found",
       });
     }
-
-    
 
     res.status(200).json({
       status_code: 200,

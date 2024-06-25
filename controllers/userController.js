@@ -118,7 +118,7 @@ const register = async (req, res) => {
   }catch(error) {
     return res.status(500).json({
       status_code: 500,
-      message: `Server Error ${error.stack}`,
+      message: `Server Error ${error.stack} catch`,
       error: error.message  // Include the specific error message for debugging
     });
   }
@@ -235,8 +235,6 @@ const register = async (req, res) => {
 
     const inserUserQuery =
       "INSERT INTO users (email, name, password, avatar, avatar_color, role, qr_code, status, uuid) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
-
-      
       connection.query(ifExistQuery, [email], async(error, results) => {
       
       if (error) {

@@ -25,7 +25,7 @@ const addSubscription = async(req, res) => {
     }catch(error) {
         return res.status(500).json({
             status_code: 500,
-            message: "Server Error.",
+            message: `Server Error ${error.stack}`,.",
             error: error.message  // Include the specific error message for debugging
         });
     } 
@@ -72,7 +72,7 @@ const addSubscription = async(req, res) => {
             console.log(error, "Error")
             return res.status(500).json({
                 status_code: 500,
-                message: "Server Error.",
+                message: `Server Error ${error.stack}`,.",
                 error: "Server Error.",
             });  
         }
@@ -128,7 +128,7 @@ const viewUserSubscriptions = (req, res) => {
             console.log(error, "Error")
             return res.status(500).json({
                 status_code: 500,
-                message: "Server Error.",
+                message: `Server Error ${error.stack}`,.",
                 error: "Server Error.",
             }); 
         }

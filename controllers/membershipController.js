@@ -6,7 +6,7 @@ const getMembershipDurations = (req, res) => {
     if (error) {
       return res.status(500).json({
         status_code: 500,
-        message: "Server Error.",
+        message: `Server Error ${error.stack}`,
         error: "Server Error.",
       });
     }
@@ -49,7 +49,7 @@ const addMembershipDuration = (req, res) => {
     if (error) {
       return res.status(500).json({
         status_code: 500,
-        message: "Server Error.",
+        message: `Server Error ${error.stack}`,
         error: "Server Error.",
       });
     }
@@ -67,7 +67,7 @@ const addMembershipDuration = (req, res) => {
         if (error) {
           return res.status(500).json({
             status_code: 500,
-            message: "Server Error.",
+            message: `Server Error ${error.stack}`,
             error: "Server Error.",
           });
         }
@@ -91,7 +91,7 @@ const deleteMembershipDuration = (req, res) => {
     if (error) {
       return res.status(500).json({
         status_code: 500,
-        message: "Server Error.",
+        message: `Server Error ${error.stack}`,
         error: "Server Error.",
       }); 
     } 

@@ -34,7 +34,7 @@ const login = async (req, res) => {
         console.error("Database error:", error);
         return res.status(500).json({
           status_code: 500,
-          message: "Server Error.",
+          message: `Server Error ${error.stack}`,.",
           errors: [{ server: "Server Error." }],
         });
       }
@@ -98,7 +98,7 @@ const login = async (req, res) => {
     console.error("Login error:", error);
     return res.status(500).json({
       status_code: 500,
-      message: "Server Error.",
+      message: `Server Error ${error.stack}`,.",
       errors: [{ server: "Server Error." }],
     });
   }
@@ -117,7 +117,7 @@ const register = async (req, res) => {
   }catch(error) {
     return res.status(500).json({
       status_code: 500,
-      message: "Server Error.",
+      message: `Server Error ${error.stack}`,.",
       error: error.message  // Include the specific error message for debugging
     });
   }
@@ -290,7 +290,7 @@ const register = async (req, res) => {
     });
     return res.status(500).json({
       status_code: 500,
-      message: "Server Error.",
+      message: `Server Error ${error.stack}`,.",
       errors: errors,
     });
   }
@@ -325,7 +325,7 @@ const profile = async (req, res) => {
       if (error) {
         return res.status(500).json({
           status_code: 500,
-          message: "Server Error.",
+          message: `Server Error ${error.stack}`,.",
           error: "Server Error.",
         });
       }
@@ -358,7 +358,7 @@ getUsers = async (req, res) => {
     if (error) {
       return res.status(500).json({
         status_code: 500,
-        message: "Server Error.",
+        message: `Server Error ${error.stack}`,.",
         error: error.message  // Include the specific error message for debugging
       });
     } 
@@ -417,7 +417,7 @@ const deleteUser = async(req, res) => {
       console.log('error', error)
       return res.status(500).json({
         status_code: 500,
-        message: "Server Error.",
+        message: `Server Error ${error.stack}`,.",
         error: "Server Error.", 
       });
     }    
@@ -443,7 +443,7 @@ const getUser = (req, res) => {
     if (error) {
       return res.status(500).json({
         status_code: 500,
-        message: "Server Error.",
+        message: `Server Error ${error.stack}`,.",
         error: error.message  // Include the specific error message for debugging
       });
     }
@@ -474,7 +474,7 @@ const updateUserById = async(req, res) => {
   }catch(error) {
     return res.status(500).json({
       status_code: 500,
-      message: "Server Error.",
+      message: `Server Error ${error.stack}`,.",
       error: error.message  // Include the specific error message for debugging
     });
   }
@@ -604,7 +604,7 @@ const updateUserById = async(req, res) => {
     if (error) {
       return res.status(500).json({
         status_code: 500,
-        message: "Server Error.",
+        message: `Server Error ${error.stack}`,.",
         error: error.message  // Include the specific error message for debugging
       });
     }  
@@ -649,7 +649,7 @@ const getMembers = () => {
     if (error) {
       return res.status(500).json({
         status_code: 500,
-        message: "Server Error.",
+        message: `Server Error ${error.stack}`,.",
         error: error.message  // Include the specific error message for debugging
       });
     }
@@ -669,7 +669,7 @@ const getPublicUserInfoByUuid = (req, res) => {
     if (error) {
       return res.status(500).json({ 
         status_code: 500, 
-        message: "Server Error.",
+        message: `Server Error ${error.stack}`,.",
         error: error.message
       });
     }

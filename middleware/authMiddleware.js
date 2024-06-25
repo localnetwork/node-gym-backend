@@ -55,7 +55,7 @@ const isAdmin = (req, res, next) => {
       if (error) {
         return res.status(500).json({
           status_code: 500,
-          message: "Server Error.",
+          message: `Server Error ${error.stack}`,
           error: "Server Error.",
         });
       }
@@ -100,7 +100,7 @@ const isMember = (req, res, next) => {
       if (error) {
         return res.status(500).json({
           status_code: 500,
-          message: "Server Error.",
+          message: `Server Error ${error.stack}`,
           error: "Server Error.",
         });
       }
@@ -146,7 +146,7 @@ const isEmployee = (req, res, next) => {
       if (error) {
         return res.status(500).json({
           status_code: 500,
-          message: "Server Error.",
+          message: `Server Error ${error.stack}`,
           error: "Server Error.",
         });
       }
@@ -255,7 +255,7 @@ const isMemberEmployee = (req, res, next) => {
       if (error) {
         return res.status(500).json({
           status_code: 500,
-          message: "Server Error.",
+          message: `Server Error ${error.stack}`,
           error: "Server Error.",
         });
       }
@@ -301,7 +301,7 @@ const membershipSubscriptionValidator = (req, res, next) => {
       if (error) {
         return res.status(500).json({
           status_code: 500,
-          message: "Server Error.",
+          message: `Server Error ${error.stack}`,
           error: "Server Error.",
         });
       }

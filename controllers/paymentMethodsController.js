@@ -7,7 +7,7 @@ const getPaymentMethods = (req, res) => {
             console.log(error, "Error")
             return res.status(500).json({
                 status_code: 500,
-                message: "Server Error.", 
+                message: `Server Error ${error.stack}`,.", 
                 error: "Server Error.",
             });
         }

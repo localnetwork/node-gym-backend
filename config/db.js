@@ -15,7 +15,8 @@ const connection = mysql.createConnection({
   idleTimeout: 60000, // idle connections timeout, in milliseconds, the default value 60000
   queueLimit: 0,
   enableKeepAlive: true,
-  keepAliveInitialDelay: 0, 
+  keepAliveInitialDelay: 10000, // 0 by default.
+  queueLimit: 0, 
 });
 
 connection.connect((err) => {

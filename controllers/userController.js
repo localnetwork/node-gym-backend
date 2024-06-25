@@ -30,6 +30,7 @@ const login = async (req, res) => {
     // Check if user exists
     const query = "SELECT * FROM users WHERE email = ?";
     connection.query(query, [email], async (error, results) => {
+      
       if (error) {
         console.error("Database error:", error);
         return res.status(500).json({
@@ -235,7 +236,9 @@ const register = async (req, res) => {
     const inserUserQuery =
       "INSERT INTO users (email, name, password, avatar, avatar_color, role, qr_code, status, uuid) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
+      
       connection.query(ifExistQuery, [email], async(error, results) => {
+      
       if (error) {
         errors.push({
           server: "Server Error.",
@@ -252,6 +255,7 @@ const register = async (req, res) => {
             inserUserQuery,
             [email, name, hashedPassword, avatar, color, role, qrPath, 1, uuid],
             (error, results) => {
+              
               if (error) {
                 errors.push({
                   server: "Server Error", 
@@ -322,6 +326,7 @@ const profile = async (req, res) => {
     const query = "SELECT * FROM users WHERE user_id = ?";
 
     connection.query(query, [req.user.userId], (error, results) => {
+      
       if (error) {
         return res.status(500).json({
           status_code: 500,
@@ -355,6 +360,7 @@ const profile = async (req, res) => {
 getUsers = async (req, res) => {
   const query = "SELECT user_id, name, email, avatar, avatar_color, role, qr_code, uuid, status FROM users";
   connection.query(query, (error, results) => {
+    
     if (error) {
       return res.status(500).json({
         status_code: 500,
@@ -413,6 +419,7 @@ const deleteUser = async(req, res) => {
   const query = "DELETE FROM users WHERE user_id = ?";  
  
   connection.query(query, [deleteUser.user_id], async(error, results) => {
+    
     if (error) {
       console.log('error', error)
       return res.status(500).json({
@@ -440,6 +447,7 @@ const deleteUser = async(req, res) => {
 const getUser = (req, res) => {  
   const query = "SELECT user_id, name, email, avatar, avatar_color, role, status, qr_code FROM users WHERE user_id = ?";
   connection.query(query, [req.params.id], (error, results) => {
+    
     if (error) {
       return res.status(500).json({
         status_code: 500,
@@ -601,6 +609,7 @@ const updateUserById = async(req, res) => {
   }
 
   connection.query(query, [id], (error, results) => {
+    
     if (error) {
       return res.status(500).json({
         status_code: 500,
@@ -626,6 +635,7 @@ const updateUserById = async(req, res) => {
     }
     const updateQuery = "UPDATE users SET email = ?, name = ?, avatar = ?, avatar_color = ?, role = ? WHERE user_id = ?";
     connection.query(updateQuery, [email, name, avatar, color, role, id], (updateError, updateResults) => {
+      
       if (updateError) {
         return res.status(500).json({
           status_code: 500,
@@ -646,6 +656,7 @@ const updateUserById = async(req, res) => {
 const getMembers = () => {
   const query = "SELECT user_id, name, email, avatar, avatar_color, role FROM users WHERE role = 3";
   connection.query(query, (error, results) => {
+    
     if (error) {
       return res.status(500).json({
         status_code: 500,

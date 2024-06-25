@@ -19,7 +19,7 @@ ORDER BY
       console.log(error, "Error") 
       return res.status(500).json({
         status_code: 500,
-        message: `Server Error ${error.stack}`,.",
+        message: `Server Error ${error.stack}`,
         error: "Server Error.",
       });
     }
@@ -51,7 +51,7 @@ ORDER BY
       console.log(error, "Error")  
       return res.status(500).json({ 
         status_code: 500,
-        message: `Server Error ${error.stack}`,.",
+        message: `Server Error ${error.stack}`,
         error: "Server Error.",
       });
     }
@@ -83,7 +83,7 @@ ORDER BY
       console.log(error, "Error") 
       return res.status(500).json({ 
         status_code: 500,
-        message: `Server Error ${error.stack}`,.",
+        message: `Server Error ${error.stack}`,
         error: "Server Error.",
       });
     }
@@ -114,7 +114,7 @@ WHERE promos.status = 1;`;
       console.log(error, "Error") 
       return res.status(500).json({ 
         status_code: 500,
-        message: `Server Error ${error.stack}`,.",
+        message: `Server Error ${error.stack}`,
         error: "Server Error.",
       });
     }
@@ -187,7 +187,7 @@ const addPromo = (req, res) => {
       if (error) {
         return res.status(500).json({
           status_code: 500,
-          message: `Server Error ${error.stack}`,.",
+          message: `Server Error ${error.stack}`,
           error: "Server Error.",
         });
       }
@@ -266,7 +266,7 @@ const editPromo = (req, res) => {
         console.log('error', error);
         return res.status(500).json({
           status_code: 500,
-          message: `Server Error ${error.stack}`,.",
+          message: `Server Error ${error.stack}`,
           error: "Server Error.",
         });
       }
@@ -296,7 +296,7 @@ const deletePromo = (req, res) => {
     if (error) {
       return res.status(500).json({
         status_code: 500,
-        message: `Server Error ${error.stack}`,.",
+        message: `Server Error ${error.stack}`,
         error: error.message, // Include actual error message for debugging
       });
     }
@@ -314,7 +314,7 @@ const deletePromo = (req, res) => {
       if (error) {
         return res.status(500).json({
           status_code: 500,
-          message: `Server Error ${error.stack}`,.",
+          message: `Server Error ${error.stack}`,
           error: error.message, // Include actual error message for debugging
         });
       }
@@ -336,7 +336,7 @@ const getPromo = (req, res) => {
     if (error) {
       return res.status(500).json({
         status_code: 500,
-        message: `Server Error ${error.stack}`,.",
+        message: `Server Error ${error.stack}`,
         error: "Server Error.",
       });
     }

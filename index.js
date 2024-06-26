@@ -14,8 +14,6 @@ const subscriptionRoutes = require("./routes/subscriptionRoutes");
 const paymentMethodRoutes = require("./routes/paymentMethodsRoutes");
 const entity = require("./lib/entity");
 
-
-
 const app = express();
 
 app.get("/", (req, res) => {

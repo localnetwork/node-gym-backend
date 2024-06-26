@@ -24,5 +24,5 @@ router.delete("/users/:id", verifyToken, isAdminEmployee, deleteUser);
 router.get("/users/:id", verifyToken, isAdminEmployee, getUser); 
 router.put("/users/:id", verifyToken, isAdminEmployee, updateUserById)
 router.get('/users/public/:uuid', getPublicUserInfoByUuid); 
- 
+   
 module.exports = router; 

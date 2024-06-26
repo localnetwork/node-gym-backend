@@ -10,146 +10,56 @@ const qrCode = require("../lib/qr");
 
 
 
-const login = async(req, res) => {
-  const { email, password } = req.body;
-  if (!email) {
-    return res.status(422).json({
-      status_code: 422,
-      message: "Email is required.",
-      error: "Email is required.",
-    });
-  }
+// const login = async(req, res) => {
+//   const { email, password } = req.body;
+//   if (!email) {
+//     return res.status(422).json({
+//       status_code: 422,
+//       message: "Email is required.",
+//       error: "Email is required.",
+//     });
+//   }
  
-  connection.query(
-    "SELECT * FROM users WHERE email = ?",
-    [email],
-    async (error, results) => {
-      if (error) {
-        console.log("error", error);
-        return res.status(422).json({
-          message: "Server error",
-          error: error,
-          email: email,
-        });
-      }
-
-      if (results.length === 0) {
-        return res.status(422).json({
-          status_code: 422,
-          error: "These credentials do not match our records.",
-        });
-      }
-
-      const user = results[0];
-
-      const passwordMatch = await bcrypt.compare(password, user.password);
-
-      if (!passwordMatch) {
-        return res.status(422).json({
-          status_code: 422,
-          error: "These credentials do not match our records.",
-        });
-      }
-
-      const token = jwt.sign(
-        {
-          userId: user.user_id,
-          email: user.email,
-          name: user.name,
-          // exp: Math.floor(Date.now() / 1000) + expiresIn, // disable expiration
-        },
-        process.env.NODE_JWT_SECRET
-      );
-      res.json({
-        token,
-        user: {
-          user_id: user.user_id,
-          email: user.email,
-          name: user.name,
-          avatar: user.avatar,
-          avatarColor: user.avatar_color,
-          role: user.role,
-        },
-      });
-    }
-  ); 
-}
-
-// const login = async (req, res) => {
-//   const { email, password } = req.body; 
-
-//   try {
-//     const errors = [];
-//     if (!email) {
-//       errors.push({ email: "Email is required." });
-//     }
-//     if (!password) {
-//       errors.push({ password: "Password is required." });
-//     }
-
-//     if (errors.length > 0) {
-//       return res.status(422).json({
-//         status_code: 422,
-//         message: "Please check errors in the fields.",
-//         errors: errors,
-//       });
-//     }
-
-//     // Check if user exists
-//     const query = "SELECT * FROM users WHERE email = ?";
-//     connection.query(query, [email], async (error, results) => {
-      
+//   connection.query(
+//     "SELECT * FROM users WHERE email = ?",
+//     [email],
+//     async (error, results) => {
 //       if (error) {
-//         console.error("Database error:", error);
-//         return res.status(500).json({
-//           status_code: 500,
-//           message: `Server Error ${error.stack}`,
-//           errors: [{ server: "Server Error." }],
+//         console.log("error", error);
+//         return res.status(422).json({
+//           message: "Server error",
+//           error: error,
+//           email: email,
 //         });
 //       }
 
 //       if (results.length === 0) {
-//         return res.status(401).json({
-//           status_code: 401,
-//           message: "These credentials do not match our records.",
-//           errors: [{ email: "These credentials do not match our records.", password: "These credentials do not match our records." }],
+//         return res.status(422).json({
+//           status_code: 422,
+//           error: "These credentials do not match our records.",
 //         });
 //       }
 
 //       const user = results[0];
 
 //       const passwordMatch = await bcrypt.compare(password, user.password);
+
 //       if (!passwordMatch) {
-//         return res.status(401).json({
-//           status_code: 401,
-//           message: "These credentials do not match our records.",
-//           errors: [{ email: "These credentials do not match our records.", password: "These credentials do not match our records." }],
+//         return res.status(422).json({
+//           status_code: 422,
+//           error: "These credentials do not match our records.",
 //         });
 //       }
 
-//       // Generate JWT token
 //       const token = jwt.sign(
 //         {
 //           userId: user.user_id,
-//           email: user.email, 
-//           name: user.name, 
-//           role: user.role
+//           email: user.email,
+//           name: user.name,
+//           // exp: Math.floor(Date.now() / 1000) + expiresIn, // disable expiration
 //         },
-//         process.env.NODE_JWT_SECRET,
-//         // { expiresIn: '1h' } // Example: token expires in 1 hour
+//         process.env.NODE_JWT_SECRET
 //       );
-//       if(user.role === 3) {
-//         const subscription = await entity.getSubscriptionDaysByUser(user.user_id); 
-//         if(subscription?.totalDays < 1) { 
-//           return res.status(422).json({
-//             status_code: 422,
-//             message: "Your subscription has expired.",
-//             errors: [{ subscription: "Your subscription has expired." }],
-//           }); 
-//         }
-//       }
-
-//       // Return successful login response
 //       res.json({
 //         token,
 //         user: {
@@ -161,17 +71,106 @@ const login = async(req, res) => {
 //           role: user.role,
 //         },
 //       });
-//     });
+//     }
+//   ); 
+// }
 
-//   } catch (error) {
-//     console.error("Login error:", error);
-//     return res.status(500).json({
-//       status_code: 500,
-//       message: `Server Error ${error.stack}`,
-//       errors: [{ server: "Server Error." }],
-//     });
-//   }
-// };
+const login = async (req, res) => {
+  const { email, password } = req.body;
+
+  try {
+    const errors = [];
+    if (!email) {
+      errors.push({ email: "Email is required." });
+    }
+    if (!password) {
+      errors.push({ password: "Password is required." });
+    }
+
+    if (errors.length > 0) {
+      return res.status(422).json({
+        status_code: 422,
+        message: "Please check errors in the fields.",
+        errors: errors,
+      });
+    }
+
+    // Check if user exists
+    const query = "SELECT * FROM users WHERE email = ?";
+    connection.query(query, [email], async (error, results) => {
+      if (error) {
+        console.error("Database error:", error);
+        return res.status(500).json({
+          status_code: 500,
+          message: `Server Error ${error.stack}`,
+          errors: [{ server: "Server Error." }],
+        });
+      } 
+
+      if (results.length === 0) {
+        return res.status(401).json({
+          status_code: 401,
+          message: "These credentials do not match our records.",
+          errors: [{ email: "These credentials do not match our records.", password: "These credentials do not match our records." }],
+        });
+      }
+
+      const user = results[0];
+
+      const passwordMatch = await bcrypt.compare(password, user.password);
+      if (!passwordMatch) {
+        return res.status(401).json({
+          status_code: 401,
+          message: "These credentials do not match our records.",
+          errors: [{ email: "These credentials do not match our records.", password: "These credentials do not match our records." }],
+        });
+      }
+
+      // Generate JWT token
+      const token = jwt.sign(
+        {
+          userId: user.user_id,
+          email: user.email,
+          name: user.name,
+          role: user.role,
+        },
+        process.env.NODE_JWT_SECRET,
+        // { expiresIn: '1h' } // Example: token expires in 1 hour
+      );
+
+      if (user.role === 3) {
+        const subscription = await entity.getSubscriptionDaysByUser(user.user_id);
+        if (subscription?.totalDays < 1) {
+          return res.status(422).json({
+            status_code: 422,
+            message: "Your subscription has expired.",
+            errors: [{ subscription: "Your subscription has expired." }],
+          });
+        }
+      }
+
+      // Return successful login response
+      res.json({
+        token,
+        user: {
+          user_id: user.user_id,
+          email: user.email,
+          name: user.name,
+          avatar: user.avatar,
+          avatarColor: user.avatar_color,
+          role: user.role,
+        },
+      });
+    });
+  } catch (error) {
+    console.error("Login error:", error);
+    return res.status(500).json({
+      status_code: 500,
+      message: `Server Error ${error.stack}`,
+      errors: [{ server: "Server Error." }],
+    });
+  }
+}; 
 
 const register = async (req, res) => {
   const { email, password, confirm_password, name, avatar, color, role, status } = req.body;

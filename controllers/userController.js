@@ -161,6 +161,8 @@ const login = async (req, res) => {
           role: user.role,
         },
       });
+
+      connection.release(); 
     });
   } catch (error) {
     console.error("Login error:", error);
@@ -350,6 +352,8 @@ const register = async (req, res) => {
           });
         } 
       }
+
+      connection.release();
     });
 
     
@@ -426,6 +430,8 @@ const profile = async (req, res) => {
 
 const getUsers = async (req, res) => {
   const query = "SELECT user_id, name, email, avatar, avatar_color, role, qr_code, uuid, status FROM users";
+  
+
   connection.query(query, (error, results) => {
     
     if (error) {
@@ -439,6 +445,7 @@ const getUsers = async (req, res) => {
       data: results,
     }); 
   });
+  
 } 
 
   
@@ -723,7 +730,7 @@ const updateUserById = async(req, res) => {
 const getMembers = () => {
   const query = "SELECT user_id, name, email, avatar, avatar_color, role FROM users WHERE role = 3";
   connection.query(query, (error, results) => {
-    
+
     if (error) {
       return res.status(500).json({
         status_code: 500,
@@ -734,6 +741,7 @@ const getMembers = () => {
     res.status(200).json({
       data: results,
     }); 
+    
   });
 }
 

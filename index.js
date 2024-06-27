@@ -13,6 +13,10 @@ const membershipDurationsRoutes = require("./routes/membershipRoutes");
 const subscriptionRoutes = require("./routes/subscriptionRoutes");
 const paymentMethodRoutes = require("./routes/paymentMethodsRoutes");
 
+const { MySQLConnection } = require("./config/db");
+
+console.log('MySQLConnection', MySQLConnection)
+
 const app = express();
 
 app.use(cors())  

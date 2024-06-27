@@ -6,6 +6,8 @@ const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 const QRCode = require('qrcode');
 const fs = require('fs');
+const pool = require("./config/dbPool");
+
 
 const userRoutes = require("./routes/userRoutes");
 const promosRoutes = require("./routes/promosRoutes");
@@ -15,6 +17,11 @@ const paymentMethodRoutes = require("./routes/paymentMethodsRoutes");
 
 const app = express();
 
+app.use(cors())  
+
+
+app.options('*', cors())  
+
 app.get("/", (req, res) => {
   res.status(200).json({
     status_code: 200,
@@ -23,7 +30,7 @@ app.get("/", (req, res) => {
 });
 
 
-app.use(cors());
+
 app.use(express.json());
 
 app.use(userRoutes);

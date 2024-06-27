@@ -2,6 +2,9 @@ const connection = require("../config/db");
 
 const util = require("../lib/util");
 
+const mysql = require('mysql'); 
+const dbConfig = require('../config/dbConfig');  
+
 const getPromos = (req, res) => {
   const query = `SELECT 
     promos.*,
@@ -14,6 +17,7 @@ INNER JOIN
     membership_durations AS md ON md.id = promos.duration
 ORDER BY 
     promos.id DESC;`;
+  const connection = mysql.createConnection(dbConfig);  
   connection.query(query, (error, results) => { 
     if (error) {
       console.log(error, "Error") 
@@ -46,6 +50,7 @@ WHERE
     promos.status = 1 AND promos.member_type = 1
 ORDER BY 
     promos.id DESC;`;
+    const connection = mysql.createConnection(dbConfig);   
   connection.query(query, (error, results) => { 
     if (error) {
       console.log(error, "Error")  
@@ -78,6 +83,7 @@ WHERE
     promos.status = 1 AND promos.member_type = 0
 ORDER BY 
     promos.id DESC;`;
+    const connection = mysql.createConnection(dbConfig);  
   connection.query(query, (error, results) => { 
     if (error) {
       console.log(error, "Error") 
@@ -109,6 +115,7 @@ INNER JOIN
 ORDER BY 
     promos.id DESC
 WHERE promos.status = 1;`;
+const connection = mysql.createConnection(dbConfig);  
   connection.query(query, (error, results) => { 
     if (error) {
       console.log(error, "Error") 
@@ -128,6 +135,7 @@ WHERE promos.status = 1;`;
 };
 
 const addPromo = (req, res) => {
+  const connection = mysql.createConnection(dbConfig);  
   const { title, price, duration, member_type, status = req.body.status || 0 } = req.body;
 
   const errors = [];
@@ -207,6 +215,7 @@ const addPromo = (req, res) => {
 };
 
 const editPromo = (req, res) => {
+  const connection = mysql.createConnection(dbConfig);  
   const { id } = req.params;
   const { title, price, duration, status, member_type } = req.body;
 
@@ -287,6 +296,7 @@ const editPromo = (req, res) => {
 }; 
 
 const deletePromo = (req, res) => {
+  const connection = mysql.createConnection(dbConfig);  
   const { id } = req.params;
   const findQuery = "SELECT * FROM promos WHERE id = ?";
   const deleteQuery = "DELETE FROM promos WHERE id = ?";
@@ -328,6 +338,7 @@ const deletePromo = (req, res) => {
 }; 
 
 const getPromo = (req, res) => {
+  const connection = mysql.createConnection(dbConfig);  
   const { id } = req.params;
 
   const query = "SELECT * FROM promos WHERE id = ?";

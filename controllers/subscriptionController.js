@@ -1,10 +1,13 @@
-const connection = require("../config/db");
+
+// const connection = require("../config/db");
 const entity = require("../lib/entity");
 const { findUserById } = require("../lib/entity");
 const util = require("../lib/util");
+const mysql = require('mysql'); 
+const dbConfig = require('../config/dbConfig');   
 
 const addSubscription = async(req, res) => {
-
+    const connection = mysql.createConnection(dbConfig);  
     const { promo, availed_by, payment_method, status } = req.body;
     const defaultStatus = status || 0;
     let errors = [];
@@ -94,6 +97,7 @@ const addSubscription = async(req, res) => {
 
 const viewUserSubscriptions = (req, res) => {
     const { id } = req.params;
+    const connection = mysql.createConnection(dbConfig);  
 
     if(!id) {
         return res.status(422).json({

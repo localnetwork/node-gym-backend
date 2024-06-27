@@ -1,7 +1,11 @@
-const connection = require("../config/db");
+// const connection = require("../config/db");
+const mysql = require('mysql'); 
+const dbConfig = require('../config/dbConfig');
+
 
 const getMembershipDurations = (req, res) => {
   const query = "SELECT * FROM membership_durations";
+  const connection = mysql.createConnection(dbConfig); 
   connection.query(query, (error, results) => {
     if (error) {
       return res.status(500).json({
@@ -45,6 +49,8 @@ const addMembershipDuration = (req, res) => {
   const findMonthQuery =
     "SELECT * FROM membership_durations WHERE duration = ?";
 
+  const connection = mysql.createConnection(dbConfig);  
+
   connection.query(findMonthQuery, [duration], (error, results) => {
     if (error) {
       return res.status(500).json({
@@ -87,6 +93,7 @@ const addMembershipDuration = (req, res) => {
 const deleteMembershipDuration = (req, res) => {
   const { id } = req.params;
   const query = "DELETE FROM membership_durations WHERE id = ?";
+  const connection = mysql.createConnection(dbConfig);  
   connection.query(query, [id], (error, results) => {
     if (error) {
       return res.status(500).json({

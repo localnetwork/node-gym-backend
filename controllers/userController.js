@@ -1,6 +1,6 @@
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
-const connection = require("../config/db");
+// const connection = require("../config/db");
 const saltRounds = 10;
 const { v4: uuidv4 } = require('uuid');
 
@@ -732,6 +732,7 @@ const updateUserById = async(req, res) => {
 
 const getMembers = () => {
   const query = "SELECT user_id, name, email, avatar, avatar_color, role FROM users WHERE role = 3";
+  const connection = mysql.createConnection(dbConfig); 
   connection.query(query, (error, results) => {
 
     if (error) {
@@ -753,7 +754,7 @@ const getPublicUserInfoByUuid = (req, res) => {
 
   const query = `
   SELECT name, user_id from users WHERE uuid = ?`;
-
+  const connection = mysql.createConnection(dbConfig);  
   connection.query(query, [uuid], async(error, results) => {
     if (error) {
       return res.status(500).json({ 

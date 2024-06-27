@@ -41,7 +41,6 @@ app.get("/", (req, res) => {
       message: "Welcome to the Gym API.",
       state: connection.state
     }); 
-
   }); 
   
 }); 

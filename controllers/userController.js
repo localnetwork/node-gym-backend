@@ -7,7 +7,8 @@ const { v4: uuidv4 } = require('uuid');
 const entity = require("../lib/entity");
 const qrCode = require("../lib/qr");
 
-
+const mysql = require('mysql'); 
+const dbConfig = require('../config/dbConfig');
 
 
 // const login = async(req, res) => {
@@ -77,7 +78,6 @@ const qrCode = require("../lib/qr");
 
 const login = async (req, res) => {
   const { email, password } = req.body;
-
   try {
     const errors = [];
     if (!email) {
@@ -97,6 +97,8 @@ const login = async (req, res) => {
 
     // Check if user exists
     const query = "SELECT * FROM users WHERE email = ?";
+    const connection = mysql.createConnection(dbConfig);
+ 
     connection.query(query, [email], async (error, results) => {
       if (error) {
         console.error("Database error:", error);
@@ -179,6 +181,7 @@ const register = async (req, res) => {
 
   let currentUser; 
   const getCurrentUser = entity.getCurrentUser(token); 
+  const connection = mysql.createConnection(dbConfig); 
 
   try {
     currentUser = await entity.findUserById(getCurrentUser?.userId);
@@ -367,6 +370,7 @@ const register = async (req, res) => {
 
 const profile = async (req, res) => {
   const token = req.headers["authorization"];
+  const connection = mysql.createConnection(dbConfig); 
 
   if (!token) {
     return res.status(422).json({
@@ -426,7 +430,7 @@ const profile = async (req, res) => {
 
 const getUsers = async (req, res) => {
   const query = "SELECT user_id, name, email, avatar, avatar_color, role, qr_code, uuid, status FROM users";
-  
+  const connection = mysql.createConnection(dbConfig); 
 
   connection.query(query, (error, results) => {
     
@@ -448,6 +452,7 @@ const getUsers = async (req, res) => {
 const deleteUser = async(req, res) => {
   const token = req.headers["authorization"].split(" ")[1];
   const currentUser = entity.getCurrentUser(token);  
+  const connection = mysql.createConnection(dbConfig); 
 
   let deleteUser;
   let getCurrentUser; 
@@ -516,6 +521,7 @@ const deleteUser = async(req, res) => {
  
 const getUser = (req, res) => {  
   const query = "SELECT user_id, name, email, avatar, avatar_color, role, status, qr_code FROM users WHERE user_id = ?";
+  const connection = mysql.createConnection(dbConfig); 
   connection.query(query, [req.params.id], (error, results) => {
     
     if (error) {
@@ -538,6 +544,7 @@ const getUser = (req, res) => {
 }
 
 const updateUserById = async(req, res) => {
+  const connection = mysql.createConnection(dbConfig); 
   const { id } = req.params; 
   const token = req.headers["authorization"];
   const bearerToken = token.split(" ")[1];

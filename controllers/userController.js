@@ -6,7 +6,7 @@ const { v4: uuidv4 } = require('uuid');
 
 const entity = require("../lib/entity");
 const qrCode = require("../lib/qr");
-const pool = require("../config/dbPool");
+
 
 
 
@@ -422,19 +422,24 @@ const profile = async (req, res) => {
     });
   });
 };
+
+
 const getUsers = async (req, res) => {
-  try {
-    const [rows] = await pool.query("SELECT user_id, name, email, avatar, avatar_color, role, qr_code, uuid, status FROM users");
+  const query = "SELECT user_id, name, email, avatar, avatar_color, role, qr_code, uuid, status FROM users";
+  connection.query(query, (error, results) => {
+    
+    if (error) {
+      return res.status(500).json({
+        status_code: 500,
+        message: `Server Error ${error.stack}`,
+        error: error.message  // Include the specific error message for debugging
+      });
+    } 
     res.status(200).json({
-      status_code: 200,
-      message: "Users fetched successfully.",
-      data: rows,
-    });
-  } catch (err) { 
-    console.error("Error executing query", err);
-    res.status(500).send("Server error");
-  }
-}  
+      data: results,
+    }); 
+  });
+} 
 
   
 const deleteUser = async(req, res) => {
@@ -476,58 +481,38 @@ const deleteUser = async(req, res) => {
     });   
   }  
  
-  
-  const query = "DELETE FROM users WHERE user_id = ?";   
-  try {
-    qrCode.delete(deleteUser.uuid); 
-   
+  qrCode.delete(deleteUser.uuid); 
+
+  const query = "DELETE FROM users WHERE user_id = ?";  
  
-    const [rows] = await pool.query(query, [deleteUser.user_id]);
+  connection.query(query, [deleteUser.user_id], async(error, results) => {
     
-    if(rows.affectedRows === 0) {
+    if (error) {
+      console.log('error', error)
+      return res.status(500).json({
+        status_code: 500,
+        message: `Server Error ${error.stack}`,
+        error: "Server Error.", 
+      });
+    }    
+
+    if (results.length === 0) {
       return res.status(404).json({
-        status_code: 404, 
+        status_code: 404,
         message: "User not found.",
         error: "User not found",
       });
     }
-    return res.status(200).json({
+
+    res.status(200).json({
       status_code: 200,
       message: "User deleted successfully.",
-    });
-  }catch(error) {
-    console.error('Error', error)
-    res.status(500).json({
-      status_code: 500,
-      message: `Server Error ${error.stack}`,
-    });   
-  }
+    }); 
+  }); 
 } 
  
-const getUser = async(req, res) => {  
+const getUser = (req, res) => {  
   const query = "SELECT user_id, name, email, avatar, avatar_color, role, status, qr_code FROM users WHERE user_id = ?";
-
-  try {
-    const [rows] = await pool.query(query, req.params.id);
-    if(rows.affectedRows === 0) { 
-      return res.status(404).json({
-        status_code: 404,
-        message: "User not found.", 
-        error: "User not found",
-      }); 
-    }
-
-    return res.status(200).json(rows[0]); 
-  }catch(error) {
-    console.error('Error', error)
-    return res.json({
-      status_code: 500,
-      message: `Server Error ${error.stack}`,
-      error: error.message
-    })
-  }
-   
-  
   connection.query(query, [req.params.id], (error, results) => {
     
     if (error) {

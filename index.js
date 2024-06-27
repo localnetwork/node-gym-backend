@@ -6,8 +6,6 @@ const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 const QRCode = require('qrcode');
 const fs = require('fs');
-const pool = require("./config/dbPool");
-
 
 const userRoutes = require("./routes/userRoutes");
 const promosRoutes = require("./routes/promosRoutes");
@@ -18,7 +16,6 @@ const paymentMethodRoutes = require("./routes/paymentMethodsRoutes");
 const app = express();
 
 app.use(cors())  
-
 
 app.options('*', cors())  
 

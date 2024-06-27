@@ -161,8 +161,6 @@ const login = async (req, res) => {
           role: user.role,
         },
       });
-
-      connection.release(); 
     });
   } catch (error) {
     console.error("Login error:", error);
@@ -352,8 +350,6 @@ const register = async (req, res) => {
           });
         } 
       }
-
-      connection.release();
     });
 
     

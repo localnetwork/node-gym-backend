@@ -152,7 +152,7 @@ const login = async (req, res) => {
       }
 
       // Return successful login response
-      res.json({
+      return res.json({
         token,
         user: {
           user_id: user.user_id,
@@ -164,6 +164,9 @@ const login = async (req, res) => {
         },
       });
     });
+    console.log('connection end'); 
+    connection.end(); 
+
   } catch (error) {
     console.error("Login error:", error);
     return res.status(500).json({
@@ -355,6 +358,8 @@ const register = async (req, res) => {
       }
     });
 
+    connection.end();  
+
     
   } catch (error) {
     errors.push({
@@ -424,6 +429,8 @@ const profile = async (req, res) => {
         data,
       });
     });
+
+    connection.end();  
   });
 };
 
@@ -445,6 +452,8 @@ const getUsers = async (req, res) => {
       data: results,
     }); 
   });
+
+  connection.end(); 
   
 } 
 
@@ -512,11 +521,13 @@ const deleteUser = async(req, res) => {
       });
     }
 
-    res.status(200).json({
+    return res.status(200).json({
       status_code: 200,
       message: "User deleted successfully.",
     }); 
   }); 
+
+  connection.end(); 
 } 
  
 const getUser = (req, res) => {  
@@ -540,6 +551,8 @@ const getUser = (req, res) => {
     }
     res.status(200).json(results[0]);  
   });
+
+  connection.end(); 
 
 }
 
@@ -728,6 +741,7 @@ const updateUserById = async(req, res) => {
       });
     });
   });
+  connection.end(); 
 } 
 
 const getMembers = () => {
@@ -747,6 +761,7 @@ const getMembers = () => {
     }); 
     
   });
+  connection.end(); 
 }
 
 const getPublicUserInfoByUuid = (req, res) => {
@@ -773,11 +788,13 @@ const getPublicUserInfoByUuid = (req, res) => {
     }
 
     const subscriptionTotal = await entity.getSubscriptionDaysByUser(results[0].user_id); 
-    res.status(200).json({
+    return res.status(200).json({
       ...results[0], 
       subscription: subscriptionTotal
     });
   }); 
+
+  connection.end(); 
    
 }
 

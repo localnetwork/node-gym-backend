@@ -13,24 +13,38 @@ const membershipDurationsRoutes = require("./routes/membershipRoutes");
 const subscriptionRoutes = require("./routes/subscriptionRoutes");
 const paymentMethodRoutes = require("./routes/paymentMethodsRoutes");
 
-const { MySQLConnection } = require("./config/db");
-
-console.log('MySQLConnection', MySQLConnection)
+const connection = require("./config/db");
 
 const app = express();
+
+
 
 app.use(cors())  
 
 app.options('*', cors())  
 
 app.get("/", (req, res) => {
-  res.status(200).json({
-    status_code: 200,
-    message: "Welcome to the Gym API.",
-  });
-});
+  connection.query("SELECT 1", (err, result) => {
+    if (err) {
+      console.error("Error connecting to database: " + err.stack);
+      return res.status(200).json({
+        status_code: 500,
+        message: "Error connecting to database",
+        error: err.stack
+      });
+    }
 
+    console.log("Connected to database");
 
+    return res.status(200).json({
+      status_code: 200,
+      message: "Welcome to the Gym API.",
+      state: connection.state
+    }); 
+
+  }); 
+  
+}); 
 
 app.use(express.json());
 
@@ -55,3 +69,13 @@ app.listen(process.env.NODE_PORT || 3000, () => {
     }`
   );
 });
+
+setTimeout(() => {
+  connection.query("SELECT 1", (err, result) => {
+    if (err) {
+      console.error("Error connecting to database: " + err.stack);
+      return;
+    }
+    console.log("Connected to database");
+  }); 
+}, 1000) 

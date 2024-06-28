@@ -7,6 +7,7 @@ const connection = require('serverless-mysql')({
     database: process.env.NODE_DB_NAME,
     user: process.env.NODE_DB_USER,
     password: process.env.NODE_DB_PASSWORD,
+    port: process.env.NODE_DB_PORT,
   },
 
   backoff: 'decorrelated',

@@ -1,39 +1,25 @@
 require("dotenv").config();
 const mysql = require("mysql");
 
-const createConnection = () => {
-  return mysql.createConnection({
+const connection = require('serverless-mysql')({
+  config: {
     host: process.env.NODE_DB_HOST,
+    database: process.env.NODE_DB_NAME,
     user: process.env.NODE_DB_USER,
     password: process.env.NODE_DB_PASSWORD,
-    database: process.env.NODE_DB_NAME,
-    port: process.env.NODE_DB_PORT,
-  });
-};
+  },
 
-let connection = createConnection();
+  backoff: 'decorrelated',
+  base: 5,
+  cap: 200
+})
 
-const handleDisconnect = () => {
-  connection.connect((err) => {
-    if (err) {
-      console.error("Error connecting to database: " + err.stack);
-      setTimeout(handleDisconnect, 2000); // Reconnect after 2 seconds
-    } else {
-      console.log("Connected to database");
-    }
-  });
-
-  connection.on('error', (err) => {
-    console.error('Database error:', err);
-    if (err.code === 'PROTOCOL_CONNECTION_LOST') {
-      connection = createConnection();
-      handleDisconnect();
-    } else {
-      throw err;
-    }
-  });
-}; 
-
-handleDisconnect();
+connection.connect((err) => {
+  if (err) {
+    console.log("Error connecting to Db");
+    return;
+  }
+  console.log("Connection established");
+});
 
 module.exports = connection;

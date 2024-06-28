@@ -10,6 +10,8 @@ const qrCode = require("../lib/qr");
 const mysql = require('mysql'); 
 const dbConfig = require('../config/dbConfig');
 
+const connection = require('../config/db');
+
 
 // const login = async(req, res) => {
 //   const { email, password } = req.body;
@@ -95,80 +97,61 @@ const login = async (req, res) => {
       });
     }
 
-    // Check if user exists
-    const query = "SELECT * FROM users WHERE email = ?";
-    const connection = mysql.createConnection(dbConfig);
- 
-    connection.query(query, [email], async (error, results) => {
-      if (error) {
-        console.error("Database error:", error);
-        return res.status(500).json({
-          status_code: 500,
-          message: `Server Error ${error.stack}`,
-          errors: [{ server: "Server Error." }],
-        });
-      } 
-
-      if (results.length === 0) {
-        return res.status(401).json({
-          status_code: 401,
-          message: "These credentials do not match our records.",
-          errors: [{ email: "These credentials do not match our records.", password: "These credentials do not match our records." }],
-        });
-      }
-
-      const user = results[0];
-
-      const passwordMatch = await bcrypt.compare(password, user.password);
-      if (!passwordMatch) {
-        return res.status(401).json({
-          status_code: 401,
-          message: "These credentials do not match our records.",
-          errors: [{ email: "These credentials do not match our records.", password: "These credentials do not match our records." }],
-        });
-      }
-
-      // Generate JWT token
-      const token = jwt.sign(
-        {
-          userId: user.user_id,
-          email: user.email,
-          name: user.name,
-          role: user.role,
-        },
-        process.env.NODE_JWT_SECRET,
-        // { expiresIn: '1h' } // Example: token expires in 1 hour
-      );
-
-      if (user.role === 3) {
-        const subscription = await entity.getSubscriptionDaysByUser(user.user_id);
-        if (subscription?.totalDays < 1) {
-          return res.status(422).json({
-            status_code: 422,
-            message: "Your subscription has expired.",
-            errors: [{ subscription: "Your subscription has expired." }],
-          });
-        }
-      }
-
-      // Return successful login response
-      return res.json({
-        token,
-        user: {
-          user_id: user.user_id,
-          email: user.email,
-          name: user.name,
-          avatar: user.avatar,
-          avatarColor: user.avatar_color,
-          role: user.role,
-        },
-      });
+    let results = await connection.query({
+      sql: 'SELECT * FROM users WHERE email = ?',
+      timeout: 10000,
+      values: [email],
     });
-    console.log('connection end'); 
-    connection.end(); 
 
+
+    if(results.length === 0) {
+      return res.status(422).json({
+        status_code: 422,
+        message: "These credentials do not match our records.",
+        errors: [{ email: "These credentials do not match our records.", password: "These credentials do not match our records." }],
+      }); 
+    }   
+
+
+    const user = results[0];
+
+    const token = jwt.sign(
+      {
+        userId: user.user_id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+      },
+      process.env.NODE_JWT_SECRET,
+      // { expiresIn: '1h' } // Example: token expires in 1 hour
+    );
+
+    if (user.role === 3) {
+      const subscription = await entity.getSubscriptionDaysByUser(user.user_id);
+      if (subscription?.totalDays < 1) {
+        return res.status(422).json({
+          status_code: 422,
+          message: "Your subscription has expired.",
+          errors: [{ subscription: "Your subscription has expired." }],
+        });
+      }
+    } 
+
+    await connection.end() 
+
+    return res.json({
+      token,
+      user: {
+        user_id: user.user_id,
+        email: user.email,
+        name: user.name,
+        avatar: user.avatar,
+        avatarColor: user.avatar_color,
+        role: user.role,
+      }, 
+    }); 
+ 
   } catch (error) {
-    console.error("Login error:", error);
     return res.status(500).json({
       status_code: 500,
       message: `Server Error ${error.stack}`,
@@ -436,25 +419,26 @@ const profile = async (req, res) => {
 
 
 const getUsers = async (req, res) => {
-  const query = "SELECT user_id, name, email, avatar, avatar_color, role, qr_code, uuid, status FROM users";
-  const connection = mysql.createConnection(dbConfig); 
+  // const query = "SELECT user_id, name, email, avatar, avatar_color, role, qr_code, uuid, status FROM users";
 
-  connection.query(query, (error, results) => {
-    
-    if (error) {
-      return res.status(500).json({
-        status_code: 500,
-        message: `Server Error ${error.stack}`,
-        error: error.message  // Include the specific error message for debugging
-      });
-    } 
-    res.status(200).json({
-      data: results,
+  try {
+    let results = await connection.query({
+      sql: 'SELECT user_id, name, email, avatar, avatar_color, role, qr_code, uuid, status FROM users',
+      timeout: 10000,
     }); 
-  });
 
-  connection.end(); 
-  
+    await connection.end(); 
+
+    return res.status(200).json({ 
+      data: results,
+    })
+  }catch(error) {
+    return res.status(500).json({
+      status_code: 500,
+      message: `Server Error ${error.stack}`,
+      error: error.message  // Include the specific error message for debugging
+    });
+  } 
 } 
 
   

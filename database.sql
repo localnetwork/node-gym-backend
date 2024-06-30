@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jun 23, 2024 at 02:00 PM
+-- Generation Time: Jun 30, 2024 at 03:03 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -52,10 +52,20 @@ INSERT INTO `membership_durations` (`id`, `title`, `created_at`, `duration`) VAL
 CREATE TABLE `non_members` (
   `id` int(11) NOT NULL,
   `name` varchar(255) NOT NULL,
-  `availed_promo` int(11) NOT NULL,
+  `created_by` int(11) DEFAULT NULL,
+  `availed_promo` int(11) DEFAULT NULL,
+  `payment_method` int(11) DEFAULT NULL,
   `created_at` varchar(255) NOT NULL,
   `note` varchar(255) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `non_members`
+--
+
+INSERT INTO `non_members` (`id`, `name`, `created_by`, `availed_promo`, `payment_method`, `created_at`, `note`) VALUES
+(1, 'John Doe', 11, 82, 1, '1719732979101', 'test'),
+(2, 'test', 11, 81, 1, '1719733173942', 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor i');
 
 -- --------------------------------------------------------
 
@@ -88,9 +98,9 @@ CREATE TABLE `promos` (
   `id` int(11) NOT NULL,
   `title` varchar(255) NOT NULL,
   `price` int(11) NOT NULL,
-  `member_type` tinyint(1) NOT NULL,
+  `member_type` tinyint(1) NOT NULL DEFAULT 1,
   `duration` int(11) NOT NULL,
-  `created_at` int(11) NOT NULL,
+  `created_at` varchar(255) NOT NULL,
   `status` tinyint(1) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -99,10 +109,10 @@ CREATE TABLE `promos` (
 --
 
 INSERT INTO `promos` (`id`, `title`, `price`, `member_type`, `duration`, `created_at`, `status`) VALUES
-(71, 'Simple Plan', 500, 1, 1, 2147483647, 1),
-(73, 'Plan 2', 200, 1, 1, 2147483647, 1),
-(74, 'Hehehe', 2500, 0, 2, 2147483647, 1),
-(75, 'Lifetime Plan', 2500, 1, 3, 2147483647, 1);
+(79, 'eee', 222, 1, 1, '1719418464567', 1),
+(80, 'Sample Hello', 200, 0, 1, '1719418530833', 0),
+(81, 'test aaa', 222, 0, 1, '1719421842791', 1),
+(82, '7 days', 222, 0, 1, '1719422076277', 1);
 
 -- --------------------------------------------------------
 
@@ -145,7 +155,8 @@ CREATE TABLE `subscriptions` (
 --
 
 INSERT INTO `subscriptions` (`id`, `created_by`, `availed_promo`, `availed_by`, `created_at`, `mode_payments`, `status`) VALUES
-(33, 11, 75, 45, '1719143918500', 2, 1);
+(5, 11, 79, 61, '1719746734364', 1, 1),
+(6, 11, 79, 61, '1719752267720', 1, 1);
 
 -- --------------------------------------------------------
 
@@ -163,19 +174,18 @@ CREATE TABLE `users` (
   `avatar` varchar(255) NOT NULL,
   `avatar_color` varchar(255) NOT NULL,
   `qr_code` varchar(255) NOT NULL,
-  `status` tinyint(1) NOT NULL
+  `status` tinyint(1) NOT NULL DEFAULT 1,
+  `deleted` tinyint(1) NOT NULL DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `users`
 --
 
-INSERT INTO `users` (`user_id`, `uuid`, `name`, `email`, `password`, `role`, `avatar`, `avatar_color`, `qr_code`, `status`) VALUES
-(11, '', 'Diome Nike', 'admin@gmail.com', '$2b$10$lBm8j01sBeFNXdVeoosSkeT.eT4lyEliSekMuThcnET8tt8Xk/BIW', 1, 'cow', 'blue', '', 1),
-(15, '', 'Peter Co Lim', 'peterco@gmail.com', '$2b$10$Uyjk3zdXKWP4mtAsuhsjTe7rzGTEtyYaPlTX27ATfwpD01Nfhl7Jq', 1, 'bear', 'yellow', '', 1),
-(45, '073091ba-7d5a-4c0a-9faa-e2b7cb3bbf30', 'member one', 'member@1.com', '$2b$10$8JLUdvgCZVQnxU9N.390Su8CsaQoX6OSmkNlGTkUPSYmBpOWdAVW.', 3, 'bear', 'blue', '/images/qr-codes/073091ba-7d5a-4c0a-9faa-e2b7cb3bbf30.png', 1),
-(46, '6097d35b-458e-4a4c-92a7-bfc002bbba90', 'member 2', 'member@2.com', '$2b$10$I7.BEBukHaSBXPaj3doiHeyUQJqnYes/itdSHgubI7R1nSURaZQ7S', 3, 'pig', 'green', '/images/qr-codes/6097d35b-458e-4a4c-92a7-bfc002bbba90.png', 1),
-(47, '67444d68-71e0-4207-b3f8-34535dd8879b', 'member 3', 'member@3.com', '$2b$10$ipBMT8o3a72PBLx0XfbeGuMSyPDEkXMzeeaakdcm/WNLAqzrcrtIq', 3, 'bear', 'blue', '/images/qr-codes/67444d68-71e0-4207-b3f8-34535dd8879b.png', 1);
+INSERT INTO `users` (`user_id`, `uuid`, `name`, `email`, `password`, `role`, `avatar`, `avatar_color`, `qr_code`, `status`, `deleted`) VALUES
+(11, '', 'Mark Jaypee', 'admin@gmail.com', '$2b$10$lBm8j01sBeFNXdVeoosSkeT.eT4lyEliSekMuThcnET8tt8Xk/BIW', 1, 'pig', 'blue', '', 1, 0),
+(15, '', 'Peter Co Lim', 'peterco@gmail.com', '$2b$10$Uyjk3zdXKWP4mtAsuhsjTe7rzGTEtyYaPlTX27ATfwpD01Nfhl7Jq', 1, 'bear', 'yellow', '', 1, 0),
+(61, 'ae816fad-e0ea-4d46-80aa-df2b25d249ce', 'Restore User', 'sample@account.com', '$2b$10$ALgfChJh1aBTnnd.O3f4S.szAVm0vG7gXBdoGscWqo0CFgRE9Zoau', 3, 'owl', 'blue', '/images/qr-codes/ae816fad-e0ea-4d46-80aa-df2b25d249ce.png', 1, 0);
 
 --
 -- Indexes for dumped tables
@@ -192,7 +202,9 @@ ALTER TABLE `membership_durations`
 --
 ALTER TABLE `non_members`
   ADD PRIMARY KEY (`id`),
-  ADD KEY `fk_nonMembersPromo` (`availed_promo`);
+  ADD KEY `fk_nonMembersPromo` (`availed_promo`),
+  ADD KEY `fk_nonMembersCreatedBy` (`created_by`),
+  ADD KEY `fk_nonmembersPM` (`payment_method`);
 
 --
 -- Indexes for table `offline_payment_gateways`
@@ -244,7 +256,7 @@ ALTER TABLE `membership_durations`
 -- AUTO_INCREMENT for table `non_members`
 --
 ALTER TABLE `non_members`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `offline_payment_gateways`
@@ -256,7 +268,7 @@ ALTER TABLE `offline_payment_gateways`
 -- AUTO_INCREMENT for table `promos`
 --
 ALTER TABLE `promos`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=76;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=83;
 
 --
 -- AUTO_INCREMENT for table `roles`
@@ -268,13 +280,13 @@ ALTER TABLE `roles`
 -- AUTO_INCREMENT for table `subscriptions`
 --
 ALTER TABLE `subscriptions`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=34;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `user_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=48;
+  MODIFY `user_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=62;
 
 --
 -- Constraints for dumped tables
@@ -284,7 +296,9 @@ ALTER TABLE `users`
 -- Constraints for table `non_members`
 --
 ALTER TABLE `non_members`
-  ADD CONSTRAINT `fk_nonMembersPromo` FOREIGN KEY (`availed_promo`) REFERENCES `promos` (`id`);
+  ADD CONSTRAINT `fk_nonMembersCreatedBy` FOREIGN KEY (`created_by`) REFERENCES `users` (`user_id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_nonMembersPromo` FOREIGN KEY (`availed_promo`) REFERENCES `promos` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_nonmembersPM` FOREIGN KEY (`payment_method`) REFERENCES `offline_payment_gateways` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
 -- Constraints for table `promos`
@@ -299,13 +313,13 @@ ALTER TABLE `subscriptions`
   ADD CONSTRAINT `fk_availedBy` FOREIGN KEY (`availed_by`) REFERENCES `users` (`user_id`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_availedPromo` FOREIGN KEY (`availed_promo`) REFERENCES `promos` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_createdBy` FOREIGN KEY (`created_by`) REFERENCES `users` (`user_id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_modeOfPayments` FOREIGN KEY (`mode_payments`) REFERENCES `offline_payment_gateways` (`id`);
+  ADD CONSTRAINT `fk_modeOfPayments` FOREIGN KEY (`mode_payments`) REFERENCES `offline_payment_gateways` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
 -- Constraints for table `users`
 --
 ALTER TABLE `users`
-  ADD CONSTRAINT `fk_role_id` FOREIGN KEY (`role`) REFERENCES `roles` (`id`);
+  ADD CONSTRAINT `fk_role_id` FOREIGN KEY (`role`) REFERENCES `roles` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

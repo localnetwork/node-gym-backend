@@ -1,5 +1,29 @@
 const jwt = require("jsonwebtoken");
-const connection = require("../config/db");
+const { connection, query } = require("../config/db");
+const TOKEN = process.env.NEXT_PUBLIC_TOKEN;
+
+verifyCookieToken = (req, res, next) => {
+  const token = req.cookies[TOKEN];
+  if (!token) {
+    res.status(422).json({
+      status_code: 422,
+      error: "Token not provided.",
+    });
+  } else {
+
+    jwt.verify(token, process.env.NODE_JWT_SECRET, (err, decoded) => {
+      if (err) {
+        return res.status(401).json({
+          status_code: 401,
+          error: "Invalid token",
+        }); 
+      }
+      req.user = decoded;
+
+      next();
+    }); 
+  }
+},
 
 verifyToken = (req, res, next) => {
   const token = req.headers["authorization"];
@@ -274,7 +298,7 @@ const isMemberEmployee = (req, res, next) => {
 const membershipSubscriptionValidator = (req, res, next) => {
   const token = req.headers["authorization"];
 
-  if (!token) {
+  if (!token) { 
     return res.status(422).json({
       status_code: 422,
       error: "Token not provided.",
@@ -319,6 +343,7 @@ const membershipSubscriptionValidator = (req, res, next) => {
 
 module.exports = {
   verifyToken,
+  verifyCookieToken, 
   isAdmin,
   isAdminEmployee, 
 };

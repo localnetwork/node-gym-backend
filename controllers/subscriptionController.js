@@ -1,13 +1,10 @@
 
-// const connection = require("../config/db");
+const { connection, query } = require("../config/db");
 const entity = require("../lib/entity");
 const { findUserById } = require("../lib/entity");
 const util = require("../lib/util");
-const mysql = require('mysql'); 
-const dbConfig = require('../config/dbConfig');   
 
 const addSubscription = async(req, res) => {
-    const connection = mysql.createConnection(dbConfig);  
     const { promo, availed_by, payment_method, status } = req.body;
     const defaultStatus = status || 0;
     let errors = [];
@@ -97,7 +94,6 @@ const addSubscription = async(req, res) => {
 
 const viewUserSubscriptions = (req, res) => {
     const { id } = req.params;
-    const connection = mysql.createConnection(dbConfig);  
 
     if(!id) {
         return res.status(422).json({
@@ -151,8 +147,81 @@ const viewUserSubscriptions = (req, res) => {
         });
     });
 }
-   
+
+const viewAllSubscriptions = async(req, res) => {
+    try {
+        const now = new Date();
+        let hasLifetime = false;
+        let subscriptions = [];
+
+        let results = await query({
+            sql: `
+            SELECT 
+                membership_durations.duration,
+                subscriptions.created_at,
+                promos.title AS promo_title,
+                promos.price AS promo_price,
+                availed_user.name AS availed_by,
+                created_user.name AS created_by,
+                offline_payment_gateways.title AS payment_gateway
+            FROM 
+                subscriptions
+            JOIN 
+                promos ON subscriptions.availed_promo = promos.id
+            JOIN 
+                membership_durations ON promos.duration = membership_durations.id
+            JOIN 
+                users availed_user ON subscriptions.availed_by = availed_user.user_id
+            JOIN 
+                users created_user ON subscriptions.created_by = created_user.user_id
+            JOIN
+                offline_payment_gateways ON subscriptions.mode_payments = offline_payment_gateways.id`,
+            timeout: 10000,
+        });  
+
+        results.forEach(row => {
+            let createdDate = new Date(parseInt(row.created_at));
+            let durationDays = row.duration;
+            let expired = false;
+
+            let formattedDate = util.formattedDateTime(row.created_at)
+
+            if (durationDays === 0) {
+                hasLifetime = true; 
+            } else {
+                let expirationDate = new Date(createdDate);
+                expirationDate.setDate(expirationDate.getDate() + durationDays);
+
+                expired = expirationDate < now;
+            }
+
+            subscriptions.push({
+                duration: durationDays,
+                created: formattedDate, 
+                status: expired,
+                promo_title: row.promo_title,
+                promo_price: row.promo_price,
+                availed_by: row.availed_by,
+                created_by: row.created_by,
+                payment_gateway: row.payment_gateway,
+            });
+        });
+ 
+        return res.json({
+            status_code: 200,
+            message: "Subscriptions fetched successfully.",
+            data: subscriptions,
+        })
+    }catch(error) {
+        return res.status(500).json({
+            status_code: 500,
+            message: `Server Error ${error.stack}`,
+            error: error.message  // Include the specific error message for debugging
+        });
+    }
+}
 module.exports = {
     addSubscription,
-    viewUserSubscriptions
+    viewUserSubscriptions,
+    viewAllSubscriptions,
 }

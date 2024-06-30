@@ -1,11 +1,7 @@
-// const connection = require("../config/db");
-const mysql = require('mysql'); 
-const dbConfig = require('../config/dbConfig');
-
+const { connection, query } = require("../config/db");
 
 const getMembershipDurations = (req, res) => {
   const query = "SELECT * FROM membership_durations";
-  const connection = mysql.createConnection(dbConfig); 
   connection.query(query, (error, results) => {
     if (error) {
       return res.status(500).json({
@@ -34,7 +30,7 @@ const addMembershipDuration = (req, res) => {
 
   if (duration.length < 0) {
     errors.push({
-      duration: "Total Months is required.",
+      duration: "Number of days is required.",
     });
   }
 
@@ -49,8 +45,6 @@ const addMembershipDuration = (req, res) => {
   const findMonthQuery =
     "SELECT * FROM membership_durations WHERE duration = ?";
 
-  const connection = mysql.createConnection(dbConfig);  
-
   connection.query(findMonthQuery, [duration], (error, results) => {
     if (error) {
       return res.status(500).json({
@@ -64,7 +58,7 @@ const addMembershipDuration = (req, res) => {
       return res.status(422).json({
         status_code: 422,
         message: "Already exists.",
-        error: `The membership duration ${duration} months is already exists.`,
+        error: `The duration ${duration} is already exists.`,
       });
     } else {
       const query =
@@ -79,7 +73,7 @@ const addMembershipDuration = (req, res) => {
         }
         res.status(200).json({
           status_code: 200,
-          message: "Membership Duration added successfully.",
+          message: "Duration added successfully.",
           data: {
             title: title,
             duration: duration,
@@ -92,8 +86,15 @@ const addMembershipDuration = (req, res) => {
 
 const deleteMembershipDuration = (req, res) => {
   const { id } = req.params;
+
+  if(id === 3) {
+    return res.status(422).json({
+      status_code: 422,
+      message: "Cannot delete default duration.",
+      error: "Cannot delete default duration.",
+    }); 
+  }
   const query = "DELETE FROM membership_durations WHERE id = ?";
-  const connection = mysql.createConnection(dbConfig);  
   connection.query(query, [id], (error, results) => {
     if (error) {
       return res.status(500).json({

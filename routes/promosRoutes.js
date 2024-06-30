@@ -9,12 +9,14 @@ const {
   getPromo,
   editPromo,
   getMemberActivePromos,
-  getNonMemberActivePromos
+  getNonMemberActivePromos,
+  getPublicPromos
 } = require("../controllers/promosController");
 
 router.get("/promos", isAdmin, getPromos);
+router.get("/promos/public", getPublicPromos);
 router.get("/active-promos", verifyToken, isAdminEmployee, getActivePromos); 
-router.get('/member-promos', verifyToken, isAdminEmployee, getMemberActivePromos);
+router.get('/member-promos', verifyToken, getMemberActivePromos);
 router.get('/nonmember-promos', verifyToken, isAdminEmployee, getNonMemberActivePromos);
 router.post("/promos", isAdmin, addPromo);
 router.delete("/promos/:id", verifyToken, isAdmin, deletePromo);

@@ -1,5 +1,4 @@
-require("dotenv").config();
-const mysql = require("mysql");
+const mysql = require('serverless-mysql');
 
 const connection = require('serverless-mysql')({
   config: {
@@ -8,19 +7,30 @@ const connection = require('serverless-mysql')({
     user: process.env.NODE_DB_USER,
     password: process.env.NODE_DB_PASSWORD,
     port: process.env.NODE_DB_PORT,
+    connectTimeout: 60000 // 1 minute
   },
-
-  backoff: 'decorrelated',
+  backoff: 'exponential',
   base: 5,
   cap: 200
 })
 
-connection.connect((err) => {
-  if (err) {
-    console.log("Error connecting to Db");
-    return;
-  }
-  console.log("Connection established");
-});
+async function query(sql, params) {
+  try {
+    await connection.connect();
+    const results = await connection.query(sql, params);
+    await connection.end();
+    return results;
+  } catch (error) {
+    if (error.code === 'PROTOCOL_CONNECTION_LOST') {
+      console.log('Reconnecting...');
+      return query(sql, params); 
+    } else {
+      throw error;
+    }
+  } 
+}
 
-module.exports = connection;
+module.exports = {
+  connection,
+  query
+};

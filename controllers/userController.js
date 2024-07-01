@@ -97,6 +97,8 @@ const login = async (req, res) => {
       values: [email],
     });
 
+    
+
 
     if(results.length === 0) {
       return res.status(422).json({
@@ -108,6 +110,15 @@ const login = async (req, res) => {
 
 
     const user = results[0];
+
+    const passwordMatch = await bcrypt.compare(password, user.password);
+    if (!passwordMatch) {
+      return res.status(401).json({
+        status_code: 401,
+        message: "These credentials do not match our records.",
+        errors: [{ email: "These credentials do not match our records.", password: "These credentials do not match our records." }],
+      }); 
+    } 
 
     if(user.status === 0) {
       return res.status(422).json({
@@ -922,8 +933,9 @@ const changePasswordByAdmin = async(req, res) => {
       });
     }
 
-    
+    console.log('new password', password); 
     const hashedPassword = await bcrypt.hash(password, saltRounds);
+    console.log('hashed password', hashedPassword)
     let results = await query({
       sql: 'UPDATE users SET password = ? WHERE user_id = ?',
       timeout: 10000,

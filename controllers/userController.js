@@ -7,70 +7,6 @@ const { v4: uuidv4 } = require('uuid');
 const entity = require("../lib/entity");
 const qrCode = require("../lib/qr");
 
-// const login = async(req, res) => {
-//   const { email, password } = req.body;
-//   if (!email) {
-//     return res.status(422).json({
-//       status_code: 422,
-//       message: "Email is required.",
-//       error: "Email is required.",
-//     });
-//   }
- 
-//   query(
-//     "SELECT * FROM users WHERE email = ?",
-//     [email],
-//     async (error, results) => {
-//       if (error) {
-//         console.log("error", error);
-//         return res.status(422).json({
-//           message: "Server error",
-//           error: error,
-//           email: email,
-//         });
-//       }
-
-//       if (results.length === 0) {
-//         return res.status(422).json({
-//           status_code: 422,
-//           error: "These credentials do not match our records.",
-//         });
-//       }
-
-//       const user = results[0];
-
-//       const passwordMatch = await bcrypt.compare(password, user.password);
-
-//       if (!passwordMatch) {
-//         return res.status(422).json({
-//           status_code: 422,
-//           error: "These credentials do not match our records.",
-//         });
-//       }
-
-//       const token = jwt.sign(
-//         {
-//           userId: user.user_id,
-//           email: user.email,
-//           name: user.name,
-//           // exp: Math.floor(Date.now() / 1000) + expiresIn, // disable expiration
-//         },
-//         process.env.NODE_JWT_SECRET
-//       );
-//       res.json({
-//         token,
-//         user: {
-//           user_id: user.user_id,
-//           email: user.email,
-//           name: user.name,
-//           avatar: user.avatar,
-//           avatarColor: user.avatar_color,
-//           role: user.role,
-//         },
-//       });
-//     }
-//   ); 
-// }
 
 const login = async (req, res) => {
   const { email, password } = req.body;
@@ -97,8 +33,6 @@ const login = async (req, res) => {
       values: [email],
     });
 
-    
-
 
     if(results.length === 0) {
       return res.status(422).json({
@@ -110,6 +44,8 @@ const login = async (req, res) => {
 
 
     const user = results[0];
+    console.log('password', password)
+    console.log('user.password', user.password)
 
     const passwordMatch = await bcrypt.compare(password, user.password);
     if (!passwordMatch) {
@@ -884,48 +820,44 @@ const getPublicUserInfoByUuid = async(req, res) => {
   }
 }
 
-const changePasswordByAdmin = async(req, res) => {
+const changePasswordByAdmin = async (req, res) => {
   try {
-    const { id } = req.params;
-    const { password, confirm_password} = req.body;
+    const { password, confirm_password, id } = req.body;
 
-    let errors = []; 
+    let errors = [];
     const token = req.headers["authorization"].split(" ")[1];
-    let currentUser; 
 
+    // Ensure getCurrentUser is awaited if it's asynchronous
+    const currentUser = await entity.getCurrentUser(token);
 
-    const getCurrentUser = entity.getCurrentUser(token);   
-
-    if(getCurrentUser.role !== 1) {
-      return res.status(422).json({
-        status_code: 422,
+    if (currentUser.role !== 1) {
+      return res.status(403).json({
+        status_code: 403,
         message: "You don't have enough permission to change password.",
         error: "Forbidden",
-      }); 
-    } 
-
-    if(!password) {
-      errors.push({
-        password: "Password is required."
-      })
+      });
     }
 
-    if(!confirm_password) {
+    if (!password) {
       errors.push({
-        confirm_password: "Confirm Password is required."
-      })
-    } 
-    if(password != confirm_password) {
-      errors.push({ 
-        password: "Password and Confirm Password do not match.",
+        password: "Password is required.",
       });
+    }
 
+    if (!confirm_password) {
       errors.push({
+        confirm_password: "Confirm Password is required.",
+      });
+    }
+
+    if (password !== confirm_password) {
+      errors.push({
+        password: "Password and Confirm Password do not match.",
         confirm_password: "Password and Confirm Password do not match.",
       });
     }
 
-    if(errors?.length > 0) {
+    if (errors.length > 0) {
       return res.status(422).json({
         status_code: 422,
         message: "Please check errors in the fields.",
@@ -933,16 +865,17 @@ const changePasswordByAdmin = async(req, res) => {
       });
     }
 
-    console.log('new password', password); 
     const hashedPassword = await bcrypt.hash(password, saltRounds);
-    console.log('hashed password', hashedPassword)
+
     let results = await query({
       sql: 'UPDATE users SET password = ? WHERE user_id = ?',
       timeout: 10000,
       values: [hashedPassword, id],
     });
 
-    if(results.length === 0) {
+    console.log('results', id)
+
+    if (results.affectedRows === 0) {
       return res.status(422).json({
         status_code: 422,
         message: "Password update failed.",
@@ -954,14 +887,15 @@ const changePasswordByAdmin = async(req, res) => {
       status_code: 200,
       message: "Password updated successfully.",
     });
-  }catch(error) {
+  } catch (error) {
+    console.error("Error in changePasswordByAdmin:", error);
     return res.status(500).json({
       status_code: 500,
-      message: `Server Error ${error.stack}`,
-      error: error.message
+      message: `Server Error: ${error.message}`,
+      error: error.message,
     });
   }
-}
+}; 
 
 module.exports = {
   login,

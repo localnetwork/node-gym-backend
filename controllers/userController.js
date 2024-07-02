@@ -44,8 +44,6 @@ const login = async (req, res) => {
 
 
     const user = results[0];
-    console.log('password', password)
-    console.log('user.password', user.password)
 
     const passwordMatch = await bcrypt.compare(password, user.password);
     if (!passwordMatch) {
@@ -872,8 +870,6 @@ const changePasswordByAdmin = async (req, res) => {
       timeout: 10000,
       values: [hashedPassword, id],
     });
-
-    console.log('results', id)
 
     if (results.affectedRows === 0) {
       return res.status(422).json({

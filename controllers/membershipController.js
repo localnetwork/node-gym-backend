@@ -75,8 +75,8 @@ const addMembershipDuration = (req, res) => {
       });
     } else {
       const query =
-        "INSERT INTO membership_durations (title, duration) VALUES (?, ?)";
-      connection.query(query, [title, duration], (error, results) => {
+        "INSERT INTO membership_durations (title, duration, created_at) VALUES (?, ?, ?)";
+      connection.query(query, [title, duration, util.getTimestamp()], (error, results) => {
         if (error) {
           return res.status(500).json({
             status_code: 500,
@@ -99,7 +99,6 @@ const addMembershipDuration = (req, res) => {
 
 const deleteMembershipDuration = (req, res) => {
   const { id } = req.params;
-  console.log('id', id)
   if(id == 1) {
     return res.status(422).json({
       status_code: 422,

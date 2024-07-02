@@ -9,7 +9,7 @@ const fs = require('fs');
 const { connection, query } = require("./config/db");
 
 const cookieParser = require('cookie-parser'); 
- 
+const nodemailer = require('nodemailer');
 
 const {
   verifyToken,
@@ -23,6 +23,7 @@ const membershipDurationsRoutes = require("./routes/membershipRoutes");
 const subscriptionRoutes = require("./routes/subscriptionRoutes");
 const paymentMethodRoutes = require("./routes/paymentMethodsRoutes");
 const nonMembersRoutes = require("./routes/nonMembersRoutes");
+const contactRoutes = require("./routes/contactRoutes");
 
 const app = express();
 
@@ -33,28 +34,6 @@ app.use(cors())
 
 app.options('*', cors())  
 
-// app.get("/", (req, res) => {
-//   connection.query("SELECT 1", (err, result) => {
-//     if (err) {
-//       console.error("Error connecting to database: " + err.stack);
-//       return res.status(200).json({
-//         status_code: 500,
-//         message: "Error connecting to database",
-//         error: err.stack
-//       });
-//     }
-
-//     console.log("Connected to database");
-
-//     return res.status(200).json({
-//       status_code: 200,
-//       message: "Welcome to the Gym API.",
-//       state: connection.state
-//     }); 
-//   }); 
-  
-// }); 
-
 app.use(express.json());
 
 app.use(userRoutes);
@@ -63,6 +42,7 @@ app.use(subscriptionRoutes)
 app.use(paymentMethodRoutes); 
 app.use(membershipDurationsRoutes); 
 app.use(nonMembersRoutes); 
+app.use(contactRoutes); 
  
 // app.use(verifyCookieToken, express.static(path.join(__dirname, 'public'))); 
 app.use(express.static(path.join(__dirname, 'public'))); 

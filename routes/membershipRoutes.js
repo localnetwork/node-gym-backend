@@ -8,6 +8,6 @@ const {
 } = require("../controllers/membershipController");
 router.get("/membership-durations", verifyToken, isAdmin, getMembershipDurations);
 router.post("/membership-durations", verifyToken, isAdmin, addMembershipDuration);
-router.post("/membership-durations/:id", verifyToken, isAdmin, deleteMembershipDuration);
+router.delete("/membership-durations/:id", verifyToken, isAdmin, deleteMembershipDuration);
 
 module.exports = router;

@@ -1,4 +1,5 @@
 const { connection, query } = require("../config/db");
+const util = require("../lib/util");
 
 const getMembershipDurations = (req, res) => {
   const query = "SELECT * FROM membership_durations";
@@ -20,6 +21,8 @@ const getMembershipDurations = (req, res) => {
 
 const addMembershipDuration = (req, res) => {
   const { title, duration } = req.body;
+
+  const convertedDuration = parseInt(duration);
   const errors = []; 
  
   if (!title) {
@@ -27,11 +30,21 @@ const addMembershipDuration = (req, res) => {
       title: "Title is required.",
     });
   }
-
-  if (duration.length < 0) {
+  if(!duration) {
     errors.push({
-      duration: "Number of days is required.",
+      duration: "Duration is required.", 
     });
+  }
+
+  if(!util.validNumber(convertedDuration)) {
+    errors.push({
+      duration: "Duration must be a number.",
+    }); 
+  }
+  if (duration < 1) {
+    errors.push({
+      duration: "Duration must not less than 1 day",
+    });  
   }
 
   if (errors.length > 0) {
@@ -86,14 +99,14 @@ const addMembershipDuration = (req, res) => {
 
 const deleteMembershipDuration = (req, res) => {
   const { id } = req.params;
-
-  if(id === 3) {
+  console.log('id', id)
+  if(id == 1) {
     return res.status(422).json({
       status_code: 422,
       message: "Cannot delete default duration.",
       error: "Cannot delete default duration.",
     }); 
-  }
+  } 
   const query = "DELETE FROM membership_durations WHERE id = ?";
   connection.query(query, [id], (error, results) => {
     if (error) {

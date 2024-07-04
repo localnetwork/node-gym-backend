@@ -24,7 +24,7 @@ const subscriptionRoutes = require("./routes/subscriptionRoutes");
 const paymentMethodRoutes = require("./routes/paymentMethodsRoutes");
 const nonMembersRoutes = require("./routes/nonMembersRoutes");
 const contactRoutes = require("./routes/contactRoutes");
-
+const toolsRoutes = require("./routes/toolsRoutes");
 const app = express();
 
 app.use(cookieParser());
@@ -43,6 +43,7 @@ app.use(paymentMethodRoutes);
 app.use(membershipDurationsRoutes); 
 app.use(nonMembersRoutes); 
 app.use(contactRoutes); 
+app.use(toolsRoutes);
  
 // app.use(verifyCookieToken, express.static(path.join(__dirname, 'public'))); 
 app.use(express.static(path.join(__dirname, 'public'))); 

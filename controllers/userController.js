@@ -336,12 +336,22 @@ const getUsers = async (req, res) => {
     let results = await query({
       sql: 'SELECT user_id, name, email, avatar, avatar_color, role, qr_code, uuid, status FROM users WHERE deleted = 0',
       timeout: 10000,
-    }); 
+    });
     
- 
+    // Map over results and create an array of promises for fetching subscriptions
+    let subscriptionPromises = results.map((user) => {
+      return entity.getSubscriptionDaysByUser(user.user_id).then((subscription) => {
+        user.subscription = subscription;
+      });
+    });
+    
+    // Wait for all subscription promises to resolve
+    await Promise.all(subscriptionPromises);
+    
+    // Now all subscriptions should be populated in the results array
     return res.status(200).json({ 
       data: results,
-    })
+    }); 
   }catch(error) {
     return res.status(500).json({
       status_code: 500,
@@ -471,8 +481,6 @@ const softDeleteUser = async(req, res) => {
       });   
     }  
    
-    qrCode.delete(deleteUser.uuid);  
-
     let results = await query({
       sql: 'UPDATE users SET deleted = 1 WHERE user_id = ?',
       timeout: 10000,
@@ -626,12 +634,11 @@ const updateUserById = async(req, res) => {
         role: "You are not allowed to deactivate employee account.",
       }); 
     }
-  
-    if(currentUser.user_id !== user.user_id && currentUser.role === 2) {
+    if(currentUser?.role == 2 && currentUser.user_id !== user.user_id && user.role !== 3) {
       errors.push({
         name: "You don't have enough permission to update other user's account."
       })  
-      errors.push({ 
+      errors.push({  
         email: "You don't have enough permission to update other user's account."
       }) 
       errors.push({
@@ -665,12 +672,12 @@ const updateUserById = async(req, res) => {
         role: "You are not allowed to update this account."
       }) 
     }
-  
-    if(currentUser.role == 2 && user.role == 2 && role != 3) {
+
+    if(currentUser?.user_id !== user.user_id && currentUser.role == 2 && user.role == 2 && role != 3) {
       errors.push({
         role: "You can only assign member role.", 
       });
-    }    
+    }      
   
     if (!email) {
       errors.push({

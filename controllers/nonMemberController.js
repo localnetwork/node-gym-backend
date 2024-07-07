@@ -84,7 +84,7 @@ const getNonMemberTransactions = async (req, res) => {
             pr.title AS promo_title
         FROM non_members m
         LEFT JOIN users u ON m.created_by = u.user_id
-        LEFT JOIN offline_payment_gateways p ON m.payment_method = p.id
+        LEFT JOIN payment_methods p ON m.payment_method = p.id
         LEFT JOIN promos pr ON m.availed_promo = pr.id
     `;
     

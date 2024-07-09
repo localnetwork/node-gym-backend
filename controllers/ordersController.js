@@ -4,7 +4,7 @@ const entity = require("../lib/entity");
 const { findUserById } = require("../lib/entity");
 const util = require("../lib/util");
 const paypal = require('../config/paypal');
-const { generateInvoiceReceipt } = require("../mail/sendMail");
+const { generateInvoiceReceipt, sendInvoiceToEmployees } = require("../mail/sendMail");
 
 const express = require('express');
 const multer = require('multer');
@@ -86,8 +86,8 @@ const addOrder = async(req, res) => {
         });
     }  
     
-    const query = `INSERT INTO orders (created_by, availed_promo, availed_by, mode_payments, created_at, status) VALUES (?, ?, ?, ?, ?, ?)`;
-    connection.query(query, [currentUser.user_id, promo, availed_by, payment_method,  util.getTimestamp(), defaultStatus], (error, results) => {
+    const query = `INSERT INTO orders (created_by, availed_promo, availed_by, mode_payments, created_at, updated_at, subscription_date status) VALUES (?, ?, ?, ?, ?, ?)`;
+    connection.query(query, [currentUser.user_id, promo, availed_by, payment_method,  util.getTimestamp(), util.getTimestamp(), util.getTimestamp(), defaultStatus], (error, results) => {
         if (error) { 
             console.log(error, "Error")
             return res.status(500).json({
@@ -170,18 +170,43 @@ const viewUserOrders = (req, res) => {
     });
 }
 
-const viewAllOrders = async(req, res) => {
+const viewAllOrders = async (req, res) => {
     try {
-        const now = new Date();
         let hasLifetime = false;
         let orders = [];
 
-        let results = await query({
+        const now = new Date();
+        const { status, start_date, end_date, order_id, sort_by = 'created_at', sort_order = 'DESC' } = req.query;
+
+        let filters = [];
+        if (status) {
+            filters.push(`orders.status = '${status}'`);
+        }
+        if (start_date) {
+            const startDate = new Date(start_date).toISOString().split('T')[0];
+            filters.push(`DATE(FROM_UNIXTIME(orders.created_at / 1000)) >= '${startDate}'`);
+        }
+        if (end_date) {
+            const endDate = new Date(end_date);
+            endDate.setHours(23, 59, 59, 999); // Set to the end of the specified day
+            const endDateStr = endDate.toISOString().split('T')[0];
+            filters.push(`DATE(FROM_UNIXTIME(orders.created_at / 1000)) <= '${endDateStr}'`);
+        }
+        if (order_id) {
+            filters.push(`orders.id = ${order_id}`);
+        }
+
+        const filterQuery = filters.length > 0 ? `WHERE ${filters.join(' AND ')}` : '';
+        const sortQuery = `ORDER BY ${sort_by} ${sort_order}`;
+
+        const results = await query({
             sql: `
             SELECT 
                 membership_durations.duration,
                 orders.created_at,
                 orders.id, 
+                orders.status AS order_status,
+                orders.subscription_date AS subscription_date,
                 promos.title AS promo_title,
                 promos.price AS promo_price,
                 availed_user.name AS availed_by,
@@ -198,52 +223,67 @@ const viewAllOrders = async(req, res) => {
             JOIN 
                 users created_user ON orders.created_by = created_user.user_id
             JOIN
-                payment_methods ON orders.mode_payments = payment_methods.id`,
+                payment_methods ON orders.mode_payments = payment_methods.id
+            ${filterQuery}
+            ${sortQuery}`,
             timeout: 10000,
-        });  
+        });
 
-        results.forEach(row => {
+        // Map through results asynchronously
+        for (const row of results) {
             let createdDate = new Date(parseInt(row.created_at));
             let durationDays = row.duration;
             let expired = false;
 
-            let formattedDate = util.formattedDateTime(row.created_at)
+            let formattedDate = util.formattedDateTime(row.created_at);
 
             if (durationDays === 0) {
-                hasLifetime = true; 
+                hasLifetime = true;
             } else {
                 let expirationDate = new Date(createdDate);
                 expirationDate.setDate(expirationDate.getDate() + durationDays);
-
                 expired = expirationDate < now;
+            }
+
+            // Fetch proof asynchronously if payment_gateway is not "paypal"
+            let offline_transaction = null;
+
+            const pm = row.payment_gateway.toLowerCase();
+
+            if (pm !== "paypal") {
+                offline_transaction = await entity.findOfflineTransactionByOrderId(row.id);
             }
 
             orders.push({
                 order_id: row.id,
                 duration: durationDays,
-                created: formattedDate, 
+                created_at: row.created_at,
+                created: formattedDate,
                 status: expired,
+                order_status: row.order_status,
                 promo_title: row.promo_title,
                 promo_price: row.promo_price,
                 availed_by: row.availed_by,
                 created_by: row.created_by,
                 payment_gateway: row.payment_gateway,
+                proof: offline_transaction?.proof,
+                subscription_date: row.subscription_date,
             });
-        });
- 
+        }
+
         return res.json({
             status_code: 200,
             message: "Orders fetched successfully.",
             data: orders,
-        })
-    }catch(error) {
+        });
+    } catch (error) {
         return res.status(500).json({
             status_code: 500,
             message: `Server Error ${error.stack}`,
             error: error.message  // Include the specific error message for debugging
         });
     }
-}
+}; 
 
  
 // Checkout function
@@ -274,7 +314,7 @@ const checkout = async (req, res) => {
     }
     if (parseInt(payment_method) !== 2 && proof?.length === 0) {
         errors.push({ proof: "Proof is required." });
-    } 
+    }
  
     if (errors.length > 0) {
         return res.status(422).json({
@@ -284,15 +324,32 @@ const checkout = async (req, res) => {
         });
     }
 
+    const hasLifetime = await entity.findUserHasLifetimeSubscription(availed_by?.userId);
+    if (hasLifetime) {
+        return res.status(400).json({
+            status_code: 400,
+            message: "You already have a lifetime subscription. You cannot extend or buy a new promo.",
+            error: "You already have a lifetime subscription. You cannot extend or buy a new promo.",
+        }); 
+    } 
     try {
         let orderId;
         // Insert order into database
         const orderResult = await query({
-            sql: `INSERT INTO orders (created_by, availed_promo, availed_by, mode_payments, created_at, status) VALUES (?, ?, ?, ?, ?, ?)`,
-            values: [availed_by?.userId, parsedPromoId, availed_by?.userId, payment_method, util.getTimestamp(), 'pending'],
-            timeout: 10000,
+            sql: `INSERT INTO orders (created_by, availed_promo, availed_by, mode_payments, created_at, updated_at, subscription_date, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        values: [
+            availed_by?.userId,
+            parsedPromoId,
+            availed_by?.userId,
+            payment_method,
+            util.getTimestamp(),
+            util.getTimestamp(), // Assuming updated_at is set to the current timestamp
+            parsedPromo.duration === 1 ? 0 : util.getTimestamp(), // Assuming subscription_date is set to the current timestamp
+            'pending'
+        ],
+        timeout: 10000,
         });
-
+ 
         if (orderResult.affectedRows === 0) {
             return res.status(500).json({
                 status_code: 500,
@@ -302,7 +359,11 @@ const checkout = async (req, res) => {
         }
 
         orderId = orderResult.insertId;
-        
+
+        generateInvoiceReceipt(availed_by?.email, parsedPromo, orderId, 'pending');
+
+        sendInvoiceToEmployees(parsedPromo, orderId, 'pending')
+          
         if (parseInt(payment_method) !== 2) {
             const offlineTransactionResult = await query({
                 sql: `INSERT INTO offline_payments_transactions (order_id, proof, created_at) VALUES (?, ?, ?)`,
@@ -317,7 +378,6 @@ const checkout = async (req, res) => {
                     error: "Failed to record offline payment transaction.",
                 });
             } 
-            generateInvoiceReceipt(availed_by?.email, parsedPromo, orderId, 'pending');
 
             return res.json({
                 status_code: 200,
@@ -393,7 +453,7 @@ const checkout = async (req, res) => {
             error: error.message
         });
     } 
-};  
+};   
 
 const executePayment = async(req, res) => {
     const { paymentId, PayerID, orderId } = req.body;
@@ -410,7 +470,20 @@ const executePayment = async(req, res) => {
             error: "Order not found.",
         });
     }
+    if(order?.status === 'completed' && order.subscription_date === 0) {
 
+        console.log('hello world')
+        return res.status(200).json({
+            status_code: 200,
+            message: "Have a lifetime membership.",
+            orderId: orderId,
+            order: order, 
+            promo: promo,
+        
+        })
+    }
+
+     
     if(order?.status === 'completed') {
         return res.status(200).json({
             status_code: 200,
@@ -420,6 +493,7 @@ const executePayment = async(req, res) => {
             promo: promo,
         })
     }
+    
 
     try {
         const execute_payment_json = {
@@ -451,12 +525,66 @@ const executePayment = async(req, res) => {
                     });
                 }
 
+                
+
+
+                // Get the last completed order's subscription_date
+                const lastOrderResult = await query({
+                    sql: 'SELECT subscription_date FROM orders WHERE status = ? ORDER BY subscription_date DESC LIMIT 1',
+                    values: ['completed']
+                });
+                
+                const lastSubscriptionStartDate = lastOrderResult.length > 0 ? lastOrderResult[0].subscription_date : null;
+            
+            
+                // Get the duration from the promos table
+                const promoResult = await query({
+                    sql: 'SELECT md.duration FROM promos p JOIN membership_durations md ON p.duration = md.id WHERE p.id = ?',
+                    values: [order.availed_promo]
+                });
+            
+                if (promoResult.length === 0) {
+                    return res.status(404).json({ error: 'Promo not found.' });
+                }
+            
+                const durationDays = promoResult[0].duration;
+            
+                let newSubscriptionStartDate;
+
+                if (!lastSubscriptionStartDate) {
+                    // Calculate newSubscriptionStartDate based on current time + durationDays
+                    const currentTime = new Date().getTime(); // Current timestamp
+                    newSubscriptionStartDate = new Date(currentTime + durationDays * 24 * 60 * 60 * 1000); // Add durationDays in milliseconds
+                } else {
+                    newSubscriptionStartDate = parseInt(lastSubscriptionStartDate) + durationDays * 24 * 60 * 60 * 1000;
+                } 
+            
+                let timestamp;
+                if(!lastSubscriptionStartDate) {
+                    timestamp = newSubscriptionStartDate.getTime();
+                }else {
+                    timestamp = newSubscriptionStartDate; 
+                }
+
+
+                console.log('order.subscription_date', order.subscription_date)
+                
+                if(order.subscription_date == 0) {
+                    timestamp = 0;
+                }
+
+                console.log('timestamp', timestamp)
                 // Update order status to completed in orders table
-                await query({
-                    sql: `UPDATE orders SET status = 'completed' WHERE id = ?`,
-                    values: [orderId],
+                // await query({
+                //     sql: `UPDATE orders SET status = 'completed' WHERE id = ?`,
+                //     values: [orderId],
+                //     timeout: 10000,
+                // });   
+                const updateResult = await query({
+                    sql: 'UPDATE orders SET status = ?, updated_at = ?, subscription_date = ? WHERE id = ?',
+                    values: ['completed', util.getTimestamp(), timestamp, orderId],
                     timeout: 10000,
-                }); 
+                });
 
                 generateInvoiceReceipt(currentUser.email, promo, orderId, 'completed'); 
                 return res.json({
@@ -477,6 +605,7 @@ const executePayment = async(req, res) => {
         });
     }
 }; 
+
 
 
 const viewOrderDetails = async(req, res) => {
@@ -508,8 +637,109 @@ const viewOrderDetails = async(req, res) => {
         message: "Order fetched successfully.",
         data: results[0],
     });
-
 }
+
+const approveOrder = async (req, res) => {
+    const { id } = req.params; // Assuming orderId is passed as a parameter in the request
+  
+    try {
+        // Check if the order exists and is pending
+        const checkResult = await query({
+            sql: 'SELECT * FROM orders WHERE id = ? AND status = ?',
+            values: [id, 'pending']
+        });
+    
+        if (checkResult.length === 0) {
+            return res.status(404).json({ error: 'Order not found or already completed.' });
+        }
+    
+        const order = checkResult[0];
+
+        if(order.mode_payments === 2) {
+            return res.status(400).json({ error: 'Paypal payment method cannot be approved manually.' });
+        } 
+
+        // Get the last completed order's subscription_date
+        const lastOrderResult = await query({
+            sql: 'SELECT subscription_date FROM orders WHERE status = ? ORDER BY subscription_date DESC LIMIT 1',
+            values: ['completed']
+        });
+        
+        const lastSubscriptionStartDate = lastOrderResult.length > 0 ? lastOrderResult[0].subscription_date : null;
+       
+    
+        // Get the duration from the promos table
+        const promoResult = await query({
+            sql: 'SELECT md.duration FROM promos p JOIN membership_durations md ON p.duration = md.id WHERE p.id = ?',
+            values: [order.availed_promo]
+        });
+    
+        if (promoResult.length === 0) {
+            return res.status(404).json({ error: 'Promo not found.' });
+        }
+    
+        const durationDays = promoResult[0].duration;
+        console.log('Promo duration (days):', durationDays);
+    
+        let newSubscriptionStartDate;
+
+        if (!lastSubscriptionStartDate) {
+            // Calculate newSubscriptionStartDate based on current time + durationDays
+            const currentTime = new Date().getTime(); // Current timestamp
+            newSubscriptionStartDate = new Date(currentTime + durationDays * 24 * 60 * 60 * 1000); // Add durationDays in milliseconds
+        } else {
+            newSubscriptionStartDate = parseInt(lastSubscriptionStartDate) + durationDays * 24 * 60 * 60 * 1000;
+        } 
+    
+        let timestamp;
+        if(!lastSubscriptionStartDate) {
+            timestamp = newSubscriptionStartDate.getTime();
+        }else {
+            timestamp = newSubscriptionStartDate; 
+        }
+
+        
+        if(durationDays === 0) {
+            timestamp = 0;
+        }
+
+        // Update the order status, updated_at, and subscription_date
+        const updateResult = await query({
+            sql: 'UPDATE orders SET status = ?, updated_at = ?, subscription_date = ? WHERE id = ?',
+            values: ['completed', util.getTimestamp(), timestamp, id]
+        });
+    
+        return res.status(200).json({ message: 'Order approved and status updated to completed.' });
+    } catch (error) {
+        console.error('Failed to approve order:', error);
+        return res.status(500).json({ error: 'Failed to approve order.' });
+    }
+}; 
+
+const rejectOrder = async (req, res) => {
+    const { id } = req.params;
+    try {
+        const checkResult = await query({
+            sql: 'SELECT * FROM orders WHERE id = ? AND status = ?',
+            values: [id, 'pending']
+        });
+    
+        if (checkResult.length === 0) {
+            return res.status(404).json({ error: 'Order not found or already completed.' });
+        }
+    
+        const order = checkResult[0];
+    
+        const updateResult = await query({
+            sql: 'UPDATE orders SET status = ? WHERE id = ?',
+            values: ['cancelled', id]
+        }); 
+        return res.status(200).json({ message: 'Order rejected and status updated to rejected.' });
+    }catch(error) {
+        return res.status(500).json({ error: 'Failed to reject order.' });
+    }
+}
+
 module.exports = {
     addOrder,
     viewUserOrders,
@@ -517,4 +747,6 @@ module.exports = {
     checkout, 
     executePayment,
     viewOrderDetails,
+    approveOrder,
+    rejectOrder
 }

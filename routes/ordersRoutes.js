@@ -8,6 +8,8 @@ const {
   checkout,
   executePayment,
   viewOrderDetails, 
+  approveOrder,
+  rejectOrder,
 } = require("../controllers/ordersController");
 
 
@@ -34,4 +36,6 @@ router.get('/orders', verifyToken, isAdminEmployee, viewAllOrders);
 router.post('/checkout', verifyToken, upload.single('proof'), checkout);
 router.post('/checkout/execute', verifyToken, executePayment);
 router.get('/checkout/:id', verifyOrderOwner, viewOrderDetails);
+router.put('/orders/:id/approve', verifyToken, isAdminEmployee, approveOrder);
+router.put('/orders/:id/reject', verifyToken, isAdminEmployee, rejectOrder);
 module.exports = router;

@@ -45,6 +45,8 @@ const login = async (req, res) => {
 
     const user = results[0];
 
+    const getUserSubscription = await entity.getUserSubscription(user.user_id);
+
     const passwordMatch = await bcrypt.compare(password, user.password);
     if (!passwordMatch) {
       return res.status(401).json({
@@ -81,18 +83,18 @@ const login = async (req, res) => {
       // { expiresIn: '1h' } // Example: token expires in 1 hour
     );
 
-    if (user.role === 3) {
-      const subscription = await entity.getSubscriptionDaysByUser(user.user_id);
-      if (subscription?.totalDays < 1) {
-        return res.status(422).json({
-          status_code: 422,
-          message: "Your subscription has expired.",
-          errors: [{ subscription: "Your subscription has expired." }],
-        });
-      }
-    } 
-
+    // if (user.role === 3) {
+    //   const subscription = await entity.getSubscriptionDaysByUser(user.user_id);
+    //   if (subscription?.totalDays < 1) {
+    //     return res.status(422).json({
+    //       status_code: 422,
+    //       message: "Your subscription has expired.",
+    //       errors: [{ subscription: "Your subscription has expired." }],
+    //     });
+    //   }
+    // }  
     await connection.end() 
+
 
     return res.json({
       token,
@@ -103,6 +105,7 @@ const login = async (req, res) => {
         avatar: user.avatar,
         avatarColor: user.avatar_color,
         role: user.role,
+        subscription: getUserSubscription, 
       }, 
     }); 
  
@@ -284,6 +287,7 @@ const profile = async (req, res) => {
       timeout: 10000,
       values: userId, 
     }); 
+    const getUserSubscription = await entity.getUserSubscription(userId);
     if(results.length === 0) {
       return res.status(404).json({
         status_code: 404,
@@ -316,6 +320,7 @@ const profile = async (req, res) => {
       avatar: user.avatar,
       avatarColor: user.avatar_color,
       role: user.role,
+      subscription: getUserSubscription
     };
 
     return res.status(200).json({

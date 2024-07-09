@@ -5,6 +5,6 @@ const {
   getPaymentMethods
 } = require("../controllers/paymentMethodsController");
 
-router.get("/payment-methods", verifyToken, isAdminEmployee, getPaymentMethods);
+router.get("/payment-methods", verifyToken, getPaymentMethods);
 
 module.exports = router;

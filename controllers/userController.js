@@ -313,6 +313,9 @@ const profile = async (req, res) => {
         error: "Your account has been deactivated.",
       });
     } 
+
+    console.log('user', user)
+
     const data = {
       user_id: user.user_id,
       email: user.email,
@@ -320,8 +323,10 @@ const profile = async (req, res) => {
       avatar: user.avatar,
       avatarColor: user.avatar_color,
       role: user.role,
-      subscription: getUserSubscription
-    };
+      uuid: user.uuid,
+      subscription: getUserSubscription,
+      qr_code: user.qr_code,
+    }; 
 
     return res.status(200).json({
       data,

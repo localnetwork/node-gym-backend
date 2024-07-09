@@ -285,6 +285,128 @@ const viewAllOrders = async (req, res) => {
     }
 }; 
 
+
+const viewOrdersPerUser = async (req, res) => {
+    const { id } = req.params; 
+
+    try {
+        let hasLifetime = false;
+        let orders = [];
+
+        const now = new Date();
+        const { status, start_date, end_date, order_id, sort_by = 'created_at', sort_order = 'DESC' } = req.query;
+
+        let filters = [];
+        if (status) {
+            filters.push(`orders.status = '${status}'`);
+        }
+        if (start_date) {
+            const startDate = new Date(start_date).toISOString().split('T')[0];
+            filters.push(`DATE(FROM_UNIXTIME(orders.created_at / 1000)) >= '${startDate}'`);
+        }
+        if (end_date) {
+            const endDate = new Date(end_date);
+            endDate.setHours(23, 59, 59, 999); // Set to the end of the specified day
+            const endDateStr = endDate.toISOString().split('T')[0];
+            filters.push(`DATE(FROM_UNIXTIME(orders.created_at / 1000)) <= '${endDateStr}'`);
+        }
+        if (order_id) {
+            filters.push(`orders.id = ${order_id}`);
+        }
+
+        const filterQuery = filters.length > 0 ? `WHERE ${filters.join(' AND ')}` : '';
+        const sortQuery = `ORDER BY ${sort_by} ${sort_order}`;
+
+        const results = await query({
+            sql: `
+                SELECT 
+                    membership_durations.duration,
+                    orders.created_at,
+                    orders.id, 
+                    orders.status AS order_status,
+                    orders.subscription_date AS subscription_date,
+                    promos.title AS promo_title,
+                    promos.price AS promo_price,
+                    availed_user.name AS availed_by,
+                    created_user.name AS created_by,
+                    payment_methods.title AS payment_gateway
+                FROM 
+                    orders
+                JOIN 
+                    promos ON orders.availed_promo = promos.id
+                JOIN 
+                    membership_durations ON promos.duration = membership_durations.id
+                JOIN 
+                    users availed_user ON orders.availed_by = availed_user.user_id
+                JOIN 
+                    users created_user ON orders.created_by = created_user.user_id
+                JOIN
+                    payment_methods ON orders.mode_payments = payment_methods.id
+                WHERE 
+                    orders.availed_by = ?
+                    ${filterQuery}
+                    ${sortQuery}
+            `,
+            values: [id],
+            timeout: 10000,
+        }); 
+
+        // Map through results asynchronously
+        for (const row of results) {
+            let createdDate = new Date(parseInt(row.created_at));
+            let durationDays = row.duration;
+            let expired = false;
+
+            let formattedDate = util.formattedDateTime(row.created_at);
+
+            if (durationDays === 0) {
+                hasLifetime = true;
+            } else {
+                let expirationDate = new Date(createdDate);
+                expirationDate.setDate(expirationDate.getDate() + durationDays);
+                expired = expirationDate < now;
+            }
+
+            // Fetch proof asynchronously if payment_gateway is not "paypal"
+            let offline_transaction = null;
+
+            const pm = row.payment_gateway.toLowerCase();
+
+            if (pm !== "paypal") {
+                offline_transaction = await entity.findOfflineTransactionByOrderId(row.id);
+            }
+
+            orders.push({
+                order_id: row.id,
+                duration: durationDays,
+                created_at: row.created_at,
+                created: formattedDate,
+                status: expired,
+                order_status: row.order_status,
+                promo_title: row.promo_title,
+                promo_price: row.promo_price,
+                availed_by: row.availed_by,
+                created_by: row.created_by,
+                payment_gateway: row.payment_gateway,
+                proof: offline_transaction?.proof,
+                subscription_date: row.subscription_date,
+            });
+        }
+
+        return res.json({
+            status_code: 200,
+            message: "Orders fetched successfully.",
+            data: orders,
+        });
+    } catch (error) {
+        return res.status(500).json({
+            status_code: 500,
+            message: `Server Error ${error.stack}`,
+            error: error.message  // Include the specific error message for debugging
+        });
+    }
+}; 
+
  
 // Checkout function
 const checkout = async (req, res) => {
@@ -748,5 +870,6 @@ module.exports = {
     executePayment,
     viewOrderDetails,
     approveOrder,
-    rejectOrder
+    rejectOrder,
+    viewOrdersPerUser
 }

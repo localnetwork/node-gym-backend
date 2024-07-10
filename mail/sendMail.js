@@ -30,7 +30,7 @@ const generateInvoiceReceipt = async (receiver, product, orderId, status) => {
         html: `
             <div style="font-family: Arial, sans-serif; padding: 20px;">
                 <div style="background:#000; padding: 10px 15px; text-align:center;"> 
-                    <img src="http://localhost:1000/images/logo.jpg" alt="One Kaizen Logo" style="max-width: 100px; height: auto;">
+                    <img src="https://one-kaizen.vercel.app/images/logo.jpg" alt="One Kaizen Logo" style="max-width: 100px; height: auto;">
                 </div>
                 <h2>Invoice Receipt</h2>
                 <p><strong>Order ID:</strong> ${orderId}</p>

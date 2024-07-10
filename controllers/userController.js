@@ -879,7 +879,7 @@ const getPublicUserInfoByUuid = async (req, res) => {
   const { uuid } = req.params;
   try {
     let results = await query({
-      sql: "SELECT name, user_id from users WHERE uuid = ?",
+      sql: "SELECT name, user_id, profile_picture from users WHERE uuid = ?",
       timeout: 10000,
       values: uuid,
     });
@@ -892,13 +892,16 @@ const getPublicUserInfoByUuid = async (req, res) => {
       });
     }
 
-    const subscriptionTotal = await entity.getSubscriptionDaysByUser(
+    // const subscriptionTotal = await entity.getSubscriptionDaysByUser(
+    //   results[0].user_id
+    // );
+    const getUserSubscription = await entity.getUserSubscription(
       results[0].user_id
     );
 
     return res.status(200).json({
       ...results[0],
-      subscription: subscriptionTotal,
+      subscription: getUserSubscription,
     });
   } catch (error) {
     return res.status(500).json({

@@ -146,10 +146,11 @@ const register = async (req, res) => {
     name,
     avatar,
     color,
-    role,
     status,
     profile_picture,
   } = req.body;
+
+  const role = parseInt(req.body.role);
 
   const errors = [];
   const token = req.headers["authorization"].split(" ")[1];
@@ -650,7 +651,7 @@ const updateUserById = async (req, res) => {
   let profile_pictureUrl =
     profilePic?.destination.replace("public", "") + "/" + profilePic?.filename;
 
-  const { id } = req.params;
+  const id = parseInt(req.params.id);
   const token = req.headers["authorization"];
   const bearerToken = token.split(" ")[1];
 
@@ -658,7 +659,8 @@ const updateUserById = async (req, res) => {
   let currentUser;
   const getCurrentUser = entity.getCurrentUser(bearerToken);
 
-  const { email, name, avatar, color, role, profile_picture } = req.body;
+  const { email, name, avatar, color, profile_picture } = req.body;
+  const role = parseInt(req.body.role);
 
   if (
     typeof profile_picture === "string" &&
@@ -694,19 +696,26 @@ const updateUserById = async (req, res) => {
         role: "You are not allowed to changed the role of admin user.",
       });
     }
-    if (currentUser.role != 1 && user.role == 2 && user.role != role) {
+    if (currentUser.role !== 1 && user.role === 2 && user.role !== role) {
       errors.push({
         role: "You don't have enough permission to change employee role.",
       });
     }
+    console.log("eee", currentUser?.user_id, "id", id);
+    if (currentUser?.role === 2 && role === 2 && currentUser?.user_id !== id) {
+      errors.push({
+        role: "You cannot assign employee role.",
+      });
+    }
 
-    if (currentUser?.role == 2 && role == 2 && status == 0) {
+    if (currentUser?.role === 2 && role === 2 && status === 0) {
       errors.push({
         role: "You are not allowed to deactivate employee account.",
       });
     }
+
     if (
-      currentUser?.role == 2 &&
+      currentUser?.role === 2 &&
       currentUser.user_id !== user.user_id &&
       user.role !== 3
     ) {
@@ -723,8 +732,8 @@ const updateUserById = async (req, res) => {
     }
 
     if (
-      currentUser.role == 1 &&
-      currentUser.user_id != user.user_id &&
+      currentUser.role === 1 &&
+      currentUser.user_id !== user.user_id &&
       user.role == 1
     ) {
       errors.push({
@@ -738,7 +747,7 @@ const updateUserById = async (req, res) => {
       });
     }
 
-    if (currentUser.role != 1 && user.role == 1) {
+    if (currentUser.role !== 1 && user.role === 1) {
       errors.push({
         name: "You are not allowed to update this account.",
       });
@@ -751,10 +760,10 @@ const updateUserById = async (req, res) => {
     }
 
     if (
-      currentUser?.user_id != user.user_id &&
-      currentUser.role == 2 &&
-      user.role == 2 &&
-      role != 3
+      currentUser?.user_id !== user.user_id &&
+      currentUser.role === 2 &&
+      user.role === 2 &&
+      role !== 3
     ) {
       errors.push({
         role: "You can only assign member role.",
@@ -791,7 +800,7 @@ const updateUserById = async (req, res) => {
       });
     }
 
-    if (currentUser.role == 1 && user.role == 1 && status == false) {
+    if (currentUser.role === 1 && user.role === 1 && status === false) {
       errors.push({
         status: "You can't have an inactive admin account.",
       });
